@@ -1,5 +1,7 @@
 # Target Layout Extended
 
+[![CI](https://github.com/JeffKarling/Target_Layout_Extended/actions/workflows/ci.yml/badge.svg)](https://github.com/JeffKarling/Target_Layout_Extended/actions/workflows/ci.yml)
+
 *'The component is the CMake target, extended for production.'*
 
 This repository builds directly on **[Target Layout](https://github.com/JeffKarling/Target_Layout)**. Where the base project demonstrates the core rule in its smallest possible form, **Target Layout Extended** shows how a physical component scales in a Linux C++ project with boundary exception handling, structured `systemd-journald` catalogs, isolated hardware counter benchmarking, score driven optimization, multi compiler presets, static analysis, and runtime sanitizers.
@@ -9,7 +11,7 @@ targets/
 ├── CMakeLists.txt                <-- Auto-registers every subdirectory as a component
 ├── journal/                      <-- systemd-journald structured logging & Lippincott helper
 ├── perf_scope/                   <-- Linux perf_event_open counters & score curve evaluator
-├── item_schema/                  <-- Top-level Protobuf code generation component
+├── item_proto/                   <-- Top-level Protobuf code generation component
 ├── database_manager/             <-- Canonical extended component
 │   ├── CMakeLists.txt
 │   ├── database_manager.cpp      <-- Private implementation + Lippincott boundary catch

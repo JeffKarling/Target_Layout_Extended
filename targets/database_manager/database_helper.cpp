@@ -1,6 +1,7 @@
 #include "database_helper.hpp"
 #include <journal/journal.hpp>
 #include <fstream>
+#include <string>
 #include <system_error>
 
 namespace target_layout_extended::database_manager::detail {
@@ -13,12 +14,12 @@ namespace target_layout_extended::database_manager::detail {
         if (parent.empty()) {
             parent = ".";
         }
-        std::error_code ec;
-        if (!std::filesystem::exists(parent, ec)) {
-            journal::log_error("database_manager", "parent directory does not exist for path: " + path.string());
+        std::error_code err_code;
+        if (!std::filesystem::exists(parent, err_code)) {
+            journal::log_error("parent directory does not exist for path: " + path.string());
             return false;
         }
-        return (std::filesystem::status(parent, ec).permissions() & std::filesystem::perms::owner_write) !=
+        return (std::filesystem::status(parent, err_code).permissions() & std::filesystem::perms::owner_write) !=
                std::filesystem::perms::none;
     }
 
@@ -26,8 +27,8 @@ namespace target_layout_extended::database_manager::detail {
         if (path.empty()) {
             return false;
         }
-        std::error_code ec;
-        if (!std::filesystem::exists(path, ec) || std::filesystem::is_directory(path, ec)) {
+        std::error_code err_code;
+        if (!std::filesystem::exists(path, err_code) || std::filesystem::is_directory(path, err_code)) {
             return false;
         }
         std::ifstream const file(path.string(), std::ios::in | std::ios::binary);

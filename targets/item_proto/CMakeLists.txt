@@ -31,8 +31,9 @@ target_sources(${DIR_NAME}
         ${CMAKE_CURRENT_BINARY_DIR}/${DIR_NAME}/${DIR_NAME}.pb.h
 )
 
-# Disable clang-tidy and cppcheck on machine-generated protobuf sources
+# Disable clang-tidy and cppcheck on machine-generated protobuf sources and mark headers SYSTEM
 set_target_properties(${DIR_NAME} PROPERTIES
+        SYSTEM ON
         CXX_CLANG_TIDY ""
         CXX_CPPCHECK ""
         CXX_INCLUDE_WHAT_YOU_USE ""

@@ -27,13 +27,17 @@ namespace target_layout_extended::perf_scope {
         diminishing_returns = 2
     };
 
+    inline constexpr double k_default_baseline_score = 5.0;
+    inline constexpr double k_default_target_score = 8.0;
+    inline constexpr std::size_t k_default_token_budget = 4000U;
+
     // Component birth baseline state stored in <name>BENCH/baseline.json.
     struct score_baseline {
         std::string component;
         hardware_metrics birth_metrics{};
-        double human_baseline_score{5.0};
-        double target_score{8.0};
-        std::size_t token_budget{4000U};
+        double human_baseline_score{k_default_baseline_score};
+        double target_score{k_default_target_score};
+        std::size_t token_budget{k_default_token_budget};
         utility_curve curve{utility_curve::logarithmic};
     };
 
@@ -41,7 +45,7 @@ namespace target_layout_extended::perf_scope {
     struct score_evaluation {
         hardware_metrics current_metrics{};
         double speedup_ratio{1.0};
-        double achieved_score{5.0};
+        double achieved_score{k_default_baseline_score};
         double score_delta{0.0};
         double marginal_gain_next_20pct{0.0};
         bool worth_further_tokens{true};
@@ -60,7 +64,7 @@ namespace target_layout_extended::perf_scope {
         auto operator=(counter_guard&&) -> counter_guard& = delete;
 
         void start() noexcept;
-        [[nodiscard]] auto stop(std::size_t operations) noexcept -> hardware_metrics;
+        [[nodiscard]] auto stop(std::size_t operations) const noexcept -> hardware_metrics;
 
     private:
         int _fd_cycles{-1};

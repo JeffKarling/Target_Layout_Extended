@@ -1,6 +1,11 @@
 #include <gtest/gtest.h>
 #include <database_manager/database_manager.hpp>
+#include <item_proto/item_proto.pb.h>
+#include <journal/journal.hpp>
 #include <filesystem>
+#include <string>
+#include <system_error>
+#include <vector>
 
 namespace dm = target_layout_extended::database_manager;
 

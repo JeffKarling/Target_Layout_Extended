@@ -4,15 +4,19 @@
 #include <linux/perf_event.h>
 #include <sys/ioctl.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <cstring>
+#include <cstdlib>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+#include <system_error>
+#include <utility>
+// IWYU pragma: no_include <stdexcept>
 
 namespace target_layout_extended::perf_scope {
 
@@ -40,17 +44,17 @@ namespace target_layout_extended::perf_scope {
             attr.exclude_kernel = 1;
             attr.exclude_hv = 1;
 
-            long const fd = syscall(SYS_perf_event_open, &attr, 0, -1, group_fd, 0UL);
-            return static_cast<int>(fd);
+            auto const file_desc = syscall(SYS_perf_event_open, &attr, 0, -1, group_fd, 0UL);
+            return static_cast<int>(file_desc);
         }
 
-        [[nodiscard]] auto read_counter_value(int fd) noexcept -> std::uint64_t {
-            if (fd < 0) {
+        [[nodiscard]] auto read_counter_value(int file_desc) noexcept -> std::uint64_t {
+            if (file_desc < 0) {
                 return 0ULL;
             }
             std::uint64_t value = 0ULL;
-            ssize_t const bytes = ::read(fd, &value, sizeof(value));
-            if (bytes != static_cast<ssize_t>(sizeof(value))) {
+            ssize_t const bytes = ::read(file_desc, &value, sizeof(value));
+            if (std::cmp_not_equal(bytes, sizeof(value))) {
                 return 0ULL;
             }
             return value;
@@ -150,7 +154,7 @@ namespace target_layout_extended::perf_scope {
                 return fallback;
             }
             auto start = colon + 1U;
-            while (start < content.size() && (content[start] == ' ' || content[start] == '\t' || content[start] == '\n')) {
+            while (start < content.size() && (content.at(start) == ' ' || content.at(start) == '\t' || content.at(start) == '\n')) {
                 ++start;
             }
             std::string const tail(content.substr(start, 48U));
@@ -163,8 +167,8 @@ namespace target_layout_extended::perf_scope {
         }
     } // namespace
 
-    counter_guard::counter_guard() noexcept {
-        _fd_cycles = open_hw_counter(PERF_COUNT_HW_CPU_CYCLES, -1);
+    counter_guard::counter_guard() noexcept
+        : _fd_cycles(open_hw_counter(PERF_COUNT_HW_CPU_CYCLES, -1)) {
         if (_fd_cycles >= 0) {
             _fd_instructions = open_hw_counter(PERF_COUNT_HW_INSTRUCTIONS, _fd_cycles);
             _fd_branch_misses = open_hw_counter(PERF_COUNT_HW_BRANCH_MISSES, _fd_cycles);
@@ -195,7 +199,7 @@ namespace target_layout_extended::perf_scope {
         _start_ns = steady_now_ns();
     }
 
-    auto counter_guard::stop(std::size_t operations) noexcept -> hardware_metrics {
+    auto counter_guard::stop(std::size_t operations) const noexcept -> hardware_metrics {
         std::int64_t const elapsed_ns = std::max<std::int64_t>(1, steady_now_ns() - _start_ns);
         if (_fd_cycles >= 0) {
             (void)::ioctl(_fd_cycles, PERF_EVENT_IOC_DISABLE, PERF_IOC_FLAG_GROUP);
@@ -250,8 +254,8 @@ namespace target_layout_extended::perf_scope {
     ) noexcept -> bool {
         try {
             if (baseline_path.has_parent_path()) {
-                std::error_code ec;
-                std::filesystem::create_directories(baseline_path.parent_path(), ec);
+                std::error_code err_code;
+                std::filesystem::create_directories(baseline_path.parent_path(), err_code);
             }
             std::ofstream out(baseline_path, std::ios::out | std::ios::trunc);
             if (!out.is_open()) {
@@ -260,11 +264,11 @@ namespace target_layout_extended::perf_scope {
             }
             out << std::fixed << std::setprecision(3);
             out << "{\n";
-            out << "  \"component\": \"" << baseline.component << "\",\n";
+            out << R"(  "component": ")" << baseline.component << "\",\n";
             out << "  \"human_baseline_score\": " << baseline.human_baseline_score << ",\n";
             out << "  \"target_score\": " << baseline.target_score << ",\n";
             out << "  \"token_budget\": " << baseline.token_budget << ",\n";
-            out << "  \"utility_curve\": \"" << curve_to_string(baseline.curve) << "\",\n";
+            out << R"(  "utility_curve": ")" << curve_to_string(baseline.curve) << "\",\n";
             out << "  \"wall_ns_per_op\": " << baseline.birth_metrics.wall_ns_per_op << ",\n";
             out << "  \"cycles_per_op\": " << baseline.birth_metrics.cycles_per_op << ",\n";
             out << "  \"instructions_per_op\": " << baseline.birth_metrics.instructions_per_op << ",\n";
@@ -283,18 +287,18 @@ namespace target_layout_extended::perf_scope {
         const score_baseline& default_baseline
     ) noexcept -> score_baseline {
         try {
-            std::error_code ec;
-            if (!std::filesystem::exists(baseline_path, ec)) {
+            std::error_code err_code;
+            if (!std::filesystem::exists(baseline_path, err_code)) {
                 (void)save_baseline(baseline_path, default_baseline);
                 return default_baseline;
             }
 
-            std::ifstream in(baseline_path, std::ios::in);
-            if (!in.is_open()) {
+            std::ifstream input(baseline_path, std::ios::in);
+            if (!input.is_open()) {
                 return default_baseline;
             }
             std::ostringstream buffer;
-            buffer << in.rdbuf();
+            buffer << input.rdbuf();
             std::string const content = buffer.str();
 
             score_baseline loaded = default_baseline;

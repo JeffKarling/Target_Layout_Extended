@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <mutex>
 #include <vector>
-#include <item_schema/item_schema.pb.h>
+#include <item_proto/item_proto.pb.h>
 #include <journal/journal.hpp>
 
 namespace target_layout_extended::database_manager {

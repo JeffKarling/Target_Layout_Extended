@@ -1,5 +1,6 @@
 #include <db_export/db_export.hpp>
-#include <item_schema/item_schema.pb.h>
+#include <item_proto/item_proto.pb.h>
+#include <journal/journal.hpp>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -20,16 +21,16 @@ namespace target_layout_extended::db_export {
                 throw std::runtime_error("failed to open database file: " + db_path.string());
             }
 
-            ItemDatabase db;
-            if (!db.ParseFromIstream(&input)) {
+            ItemDatabase database;
+            if (!database.ParseFromIstream(&input)) {
                 throw std::runtime_error("failed to parse protobuf database: " + db_path.string());
             }
 
             std::ostringstream out;
-            out << "Items Database Snapshot (" << db.items_size() << " records)\n";
+            out << "Items Database Snapshot (" << database.items_size() << " records)\n";
             out << "----------------------------------------\n";
-            for (int i = 0; i < db.items_size(); ++i) {
-                auto const& item = db.items(i);
+            for (int i = 0; i < database.items_size(); ++i) {
+                auto const& item = database.items(i);
                 out << "  Item ID: " << item.id()
                     << " | Name: " << item.name()
                     << " | Value: " << item.value() << "\n";

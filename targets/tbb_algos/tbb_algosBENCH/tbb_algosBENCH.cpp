@@ -2,7 +2,10 @@
 #include <tbb_algos/tbb_algos.hpp>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <iostream>
+#include <string>
+#include <system_error>
 #include <vector>
 
 int main() {

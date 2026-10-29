@@ -11,7 +11,7 @@ cmake --preset Clang_Tidy
 cmake --build --preset Clang_Tidy
 ```
 
-In `cmake/templates/target_properties.cmake`, `CXX_CLANG_TIDY` is attached automatically when `CMAKE_BUILD_TYPE` is `Clang_Tidy`. Machine generated components such as `targets/item_schema/` clear `CXX_CLANG_TIDY` on their own target so generated Protobuf files do not clutter static analysis output.
+In `cmake/templates/target_properties.cmake`, `CXX_CLANG_TIDY` is attached automatically when `CMAKE_BUILD_TYPE` is `Clang_Tidy`. Machine generated components such as `targets/item_proto/` clear `CXX_CLANG_TIDY` on their own target so generated Protobuf files do not clutter static analysis output.
 
 ### Warning classification and clang_tidy_state.md
 

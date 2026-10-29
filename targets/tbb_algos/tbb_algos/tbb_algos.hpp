@@ -14,13 +14,15 @@ namespace target_layout_extended::tbb_algos {
         };
     } // namespace catalog
 
+    inline constexpr std::size_t k_default_trig_iterations = 2500U;
+
     // Doubles every element in parallel using oneTBB.
     [[nodiscard]] auto parallel_double(std::vector<int>& numbers) noexcept -> bool;
 
     // Performs a CPU-intensive parallel trigonometric reduction over a vector for hardware benchmarking.
     [[nodiscard]] auto parallel_trig_work(
         std::vector<double>& values,
-        std::size_t inner_iterations = 2500U
+        std::size_t inner_iterations = k_default_trig_iterations
     ) noexcept -> bool;
 
 } // namespace target_layout_extended::tbb_algos

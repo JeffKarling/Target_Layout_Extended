@@ -15,6 +15,20 @@ option(ENABLE_IWYU "Enable include-what-you-use static analysis" OFF)
 option(ENABLE_CPPCHECK "Enable cppcheck static analysis" OFF)
 option(BUILD_TESTING "Build unit tests and component benchmarks" ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# For Editor Integration (like VS Code), the build system needs access to compile_commands.json.
+file(CREATE_LINK
+        "${CMAKE_BINARY_DIR}/compile_commands.json"
+        "${CMAKE_SOURCE_DIR}/compile_commands.json"
+        SYMBOLIC COPY_ON_ERROR
+)
+
+find_program(CCACHE_PROGRAM ccache)
+if(CCACHE_PROGRAM)
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
+endif()
+
 # Disable test target compilation only during dedicated Clang-Tidy static analysis passes.
 # Sanitizer builds keep BUILD_TESTING enabled so ctest executes unit tests under ASan, UBSan, TSan, MSan, and LSan.
 if(CMAKE_BUILD_TYPE MATCHES ".*Tidy.*")
@@ -28,6 +42,7 @@ endif()
 add_subdirectory(cmake)
 
 if(BUILD_TESTING)
+    set(CMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE PRE_TEST)
     include(GoogleTest)
 endif()
 

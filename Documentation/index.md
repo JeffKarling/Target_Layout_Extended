@@ -82,7 +82,7 @@ include(${CMAKE_BINARY_DIR}/target_compile_options.cmake)
 
 ## Code generation as a first class sibling component
 
-Base **Target Layout** explains why code generation belongs in its own component directory. In **Target Layout Extended**, `targets/item_schema/` validates this pattern with Google Protobuf.
+Base **Target Layout** explains why code generation belongs in its own component directory. In **Target Layout Extended**, `targets/item_proto/` validates this pattern with Google Protobuf.
 
 ```cmake
 cmake_path(GET CMAKE_CURRENT_LIST_DIR FILENAME DIR_NAME)
@@ -116,12 +116,19 @@ target_sources(${DIR_NAME}
         ${CMAKE_CURRENT_BINARY_DIR}/${DIR_NAME}/${DIR_NAME}.pb.h
 )
 
+set_target_properties(${DIR_NAME} PROPERTIES
+        SYSTEM ON
+        CXX_CLANG_TIDY ""
+        CXX_INCLUDE_WHAT_YOU_USE ""
+        CXX_CPPCHECK ""
+)
+
 target_link_libraries(${DIR_NAME} PUBLIC PkgConfig::protobuf)
 ```
 
-* **Schema input lives in version control.** The `.proto` file lives at `targets/item_schema/item_schema/item_schema.proto` while generated `.pb.h` and `.pb.cc` files stay inside `${CMAKE_CURRENT_BINARY_DIR}`.
-* **Transparent `FILE_SET` consumption.** By setting `BASE_DIRS ${CMAKE_CURRENT_BINARY_DIR}` on the `PUBLIC FILE_SET`, downstream components like `database_manager` and `db_export` link `${PROJECT_NAME}::item_schema` and write `#include <item_schema/item_schema.pb.h>`.
-* **Isolated warning and analysis policies.** Machine generated C++ code often triggers pedantic compiler or `clang-tidy` warnings. Keeping `item_schema` as its own component isolates static analysis suppression to the generated code while hand written components stay under strict checks.
+* **Schema input lives in version control.** The `.proto` file lives at `targets/item_proto/item_proto/item_proto.proto` while generated `.pb.h` and `.pb.cc` files stay inside `${CMAKE_CURRENT_BINARY_DIR}`.
+* **Transparent `FILE_SET` consumption.** By setting `BASE_DIRS ${CMAKE_CURRENT_BINARY_DIR}` on the `PUBLIC FILE_SET`, downstream components like `database_manager` and `db_export` link `${PROJECT_NAME}::item_proto` and write `#include <item_proto/item_proto.pb.h>`.
+* **Isolated warning and analysis policies.** Machine generated C++ code often triggers pedantic compiler or `clang-tidy` warnings. Keeping `item_proto` as its own component and marking `SYSTEM ON` isolates static analysis suppression to the generated code while hand written components stay under strict checks.
 
 ## Executables follow the same naming rule
 
@@ -138,8 +145,10 @@ include(${CMAKE_BINARY_DIR}/target_compile_options.cmake)
 target_link_libraries(${DIR_NAME}
         PRIVATE
         ${PROJECT_NAME}::database_manager
+        ${PROJECT_NAME}::item_proto
         ${PROJECT_NAME}::tbb_algos
         ${PROJECT_NAME}::db_export
+        ${PROJECT_NAME}::journal
 )
 ```
 

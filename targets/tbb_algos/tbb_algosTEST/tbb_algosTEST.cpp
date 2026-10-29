@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <tbb_algos/tbb_algos.hpp>
+#include <string>
 #include <vector>
 
 namespace ta = target_layout_extended::tbb_algos;

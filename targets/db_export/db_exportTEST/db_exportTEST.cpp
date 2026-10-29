@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
 #include <database_manager/database_manager.hpp>
 #include <db_export/db_export.hpp>
+#include <item_proto/item_proto.pb.h>
 #include <filesystem>
 #include <string>
+#include <system_error>
 
 namespace dm = target_layout_extended::database_manager;
 namespace de = target_layout_extended::db_export;

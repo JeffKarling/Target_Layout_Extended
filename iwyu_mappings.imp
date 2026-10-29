@@ -1,7 +1,7 @@
 [
-  # Map all Intel oneTBB internal details back to the public parallel_reduce header
-  { include: ["@<oneapi/tbb/detail/.*>", "private", "<oneapi/tbb/parallel_reduce.h>", "public"] },
-  { include: ["@<oneapi/tbb/internal/.*>", "private", "<oneapi/tbb/parallel_reduce.h>", "public"] },
+  # Map all Intel oneTBB internal details back to the public parallel_for_each header
+  { include: ["@<oneapi/tbb/detail/.*>", "private", "<oneapi/tbb/parallel_for_each.h>", "public"] },
+  { include: ["@<oneapi/tbb/internal/.*>", "private", "<oneapi/tbb/parallel_for_each.h>", "public"] },
 
   # Map all Parallel STL internal implementation files back to the public standard headers
   { include: ["@<pstl/.*_impl\\.h>", "private", "<execution>", "public"] },

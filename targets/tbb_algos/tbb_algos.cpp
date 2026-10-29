@@ -1,4 +1,5 @@
 #include <tbb_algos/tbb_algos.hpp>
+#include <journal/journal.hpp>
 #include <oneapi/tbb/parallel_for_each.h>
 #include <cmath>
 #include <stdexcept>
@@ -7,8 +8,8 @@ namespace target_layout_extended::tbb_algos {
 
     auto parallel_double(std::vector<int>& numbers) noexcept -> bool {
         try {
-            oneapi::tbb::parallel_for_each(numbers.begin(), numbers.end(), [](int& n) noexcept {
-                n *= 2;
+            oneapi::tbb::parallel_for_each(numbers.begin(), numbers.end(), [](int& num) noexcept {
+                num *= 2;
             });
             return true;
         } catch (...) {
@@ -24,13 +25,13 @@ namespace target_layout_extended::tbb_algos {
             if (inner_iterations == 0U) {
                 throw std::invalid_argument("inner_iterations must be greater than zero");
             }
-            oneapi::tbb::parallel_for_each(values.begin(), values.end(), [inner_iterations](double& v) noexcept {
-                double acc = v;
+            oneapi::tbb::parallel_for_each(values.begin(), values.end(), [inner_iterations](double& val) noexcept {
+                double acc = val;
                 for (std::size_t i = 0U; i < inner_iterations; ++i) {
                     auto const step = static_cast<double>(i) * 0.001;
                     acc += std::sin(acc + step) * std::cos(acc - step);
                 }
-                v = acc;
+                val = acc;
             });
             return true;
         } catch (...) {

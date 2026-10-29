@@ -22,7 +22,7 @@ target_link_libraries(${DIR_NAME}
         ${PROJECT_NAME}::journal
 
         PRIVATE
-        ${PROJECT_NAME}::item_schema
+        ${PROJECT_NAME}::item_proto
 )
 
 if(BUILD_TESTING)

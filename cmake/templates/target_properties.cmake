@@ -6,7 +6,7 @@ set(IWYU_ARGS
 )
 
 set(CPPCHECK_ARGS
-        "cppcheck$<SEMICOLON>--enable=all$<SEMICOLON>--std=c++23$<SEMICOLON>--inline-suppr$<SEMICOLON>--suppress=missingIncludeSystem$<SEMICOLON>--suppress=unusedStructMember"
+        "cppcheck$<SEMICOLON>--enable=all$<SEMICOLON>--std=c++23$<SEMICOLON>--inline-suppr$<SEMICOLON>--suppress=missingIncludeSystem$<SEMICOLON>--suppress=unusedStructMember$<SEMICOLON>--suppress=unusedFunction$<SEMICOLON>--suppress=unmatchedSuppression$<SEMICOLON>--suppress=checkersReport$<SEMICOLON>--suppress=*:${CMAKE_BINARY_DIR}/*"
 )
 
 set(IPO_VALUE "OFF")
@@ -26,6 +26,7 @@ if(ENABLE_WARNING_AS_ERROR)
 endif()
 
 set_target_properties(${DIR_NAME} PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
         INTERPROCEDURAL_OPTIMIZATION "${IPO_VALUE}"
 
         CXX_INCLUDE_WHAT_YOU_USE "$<$<AND:$<BOOL:${ENABLE_IWYU}>,$<COMPILE_LANGUAGE:CXX>>:${IWYU_ARGS}>"

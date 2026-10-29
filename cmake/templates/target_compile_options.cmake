@@ -41,7 +41,7 @@ target_compile_options(${DIR_NAME} PRIVATE
         # Clang runtime sanitizers
         $<$<CONFIG:Clang_UBSan>:-march=native -O2 -ggdb -gdwarf-5 -fsanitize=undefined -fno-sanitize-recover=undefined -fno-omit-frame-pointer -fno-optimize-sibling-calls>
         $<$<CONFIG:Clang_MSan>:-march=native -O2 -g -fsanitize=memory -fsanitize-memory-track-origins=2 -fno-omit-frame-pointer -fno-optimize-sibling-calls>
-        $<$<CONFIG:Clang_TSan>:-march=native -O2 -g -fsanitize=thread -fno-omit-frame-pointer -fno-optimize-sibling-calls>
+        $<$<CONFIG:Clang_TSan>:-march=native -O2 -g -fsanitize=thread -fPIE -fno-omit-frame-pointer -fno-optimize-sibling-calls>
         $<$<CONFIG:Clang_ASan>:-march=native -O2 -g -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls>
         $<$<CONFIG:Clang_LSan>:-march=native -O2 -g -fsanitize=leak -fPIE -fno-omit-frame-pointer -fno-optimize-sibling-calls>
 

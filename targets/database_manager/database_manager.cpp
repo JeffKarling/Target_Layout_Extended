@@ -1,5 +1,8 @@
 #include <database_manager/database_manager.hpp>
 #include "database_helper.hpp"
+#include <item_proto/item_proto.pb.h>
+#include <journal/journal.hpp>
+#include <cstddef>
 #include <fstream>
 #include <stdexcept>
 #include <string>
@@ -11,7 +14,7 @@ namespace target_layout_extended::database_manager {
             if (db_path.empty()) {
                 throw std::invalid_argument("database path must not be empty");
             }
-            std::lock_guard<std::mutex> const lock(_db_mutex);
+            std::scoped_lock const lock(_db_mutex);
             _db_path = db_path;
             return load();
         } catch (...) {
@@ -24,7 +27,7 @@ namespace target_layout_extended::database_manager {
             if (item.id().empty()) {
                 throw std::invalid_argument("item id must not be empty");
             }
-            std::lock_guard<std::mutex> const lock(_db_mutex);
+            std::scoped_lock const lock(_db_mutex);
 
             for (int i = 0; i < _database.items_size(); ++i) {
                 if (_database.items(i).id() == item.id()) {
@@ -87,7 +90,7 @@ namespace target_layout_extended::database_manager {
 
     auto database_store::get_all_items() const noexcept -> std::vector<Item> {
         try {
-            std::lock_guard<std::mutex> const lock(_db_mutex);
+            std::scoped_lock const lock(_db_mutex);
             std::vector<Item> result;
             result.reserve(static_cast<std::size_t>(_database.items_size()));
             for (int i = 0; i < _database.items_size(); ++i) {

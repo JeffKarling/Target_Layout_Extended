@@ -1,0 +1,161 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  static-analysis:
+    name: Static Analysis and Quality Gates
+    runs-on: ubuntu-24.04
+    container:
+      image: fedora:latest
+    steps:
+      - name: Install Fedora toolchain and dependencies
+        run: |
+          dnf install -y \
+            gcc-c++ clang clang-tools-extra cmake ninja-build ccache \
+            pkgconf-pkg-config protobuf-compiler protobuf-devel \
+            tbb-devel systemd-devel gtest-devel \
+            iwyu cppcheck graphviz git
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: static-analysis
+
+      - name: Run Clang-Tidy static analysis
+        run: |
+          cmake --preset Clang_Tidy
+          cmake --build --preset Clang_Tidy
+
+      - name: Run GCC strict warnings and Cppcheck gate
+        run: |
+          cmake --preset GNU_Custom_Debug -DENABLE_WARNING_AS_ERROR=ON -DENABLE_CPPCHECK=ON
+          cmake --build --preset GNU_Custom_Debug
+
+      - name: Run Clang strict warnings and Include-What-You-Use gate
+        run: |
+          cmake --preset Clang_Custom_Debug -DENABLE_WARNING_AS_ERROR=ON -DENABLE_IWYU=ON
+          cmake --build --preset Clang_Custom_Debug
+
+  gnu-matrix:
+    name: ${{ matrix.workflow }}
+    runs-on: ubuntu-24.04
+    container:
+      image: fedora:latest
+    strategy:
+      fail-fast: false
+      matrix:
+        workflow:
+          - GNU_Default_Debug_Verify
+          - GNU_Default_Release_Verify
+          - GNU_Custom_Debug_Verify
+          - GNU_Custom_Debug_Deep_Verify
+          - GNU_Custom_Release_Verify
+          - GNU_UBSan_Verify
+          - GNU_ASan_Verify
+    steps:
+      - name: Install Fedora GCC toolchain and dependencies
+        run: |
+          dnf install -y \
+            gcc-c++ libasan libubsan cmake ninja-build ccache \
+            pkgconf-pkg-config protobuf-compiler protobuf-devel \
+            tbb-devel systemd-devel gtest-devel git
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ matrix.workflow }}
+
+      - name: Execute CMake workflow preset
+        run: cmake --workflow --preset ${{ matrix.workflow }}
+
+  clang-matrix:
+    name: ${{ matrix.workflow }}
+    runs-on: ubuntu-24.04
+    container:
+      image: fedora:latest
+    strategy:
+      fail-fast: false
+      matrix:
+        workflow:
+          - Clang_Default_Debug_Verify
+          - Clang_Default_Release_Verify
+          - Clang_Custom_Debug_Verify
+          - Clang_Custom_Debug_Deep_Verify
+          - Clang_Custom_Release_Verify
+          - Clang_UBSan_Verify
+          - Clang_TSan_Verify
+          - Clang_ASan_Verify
+          - Clang_LSan_Verify
+    steps:
+      - name: Install Fedora Clang toolchain and dependencies
+        run: |
+          dnf install -y \
+            clang compiler-rt gcc-c++ cmake ninja-build ccache \
+            pkgconf-pkg-config protobuf-compiler protobuf-devel \
+            tbb-devel systemd-devel gtest-devel git
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ matrix.workflow }}
+
+      - name: Execute CMake workflow preset
+        run: cmake --workflow --preset ${{ matrix.workflow }}
+
+  extra-presets-and-artifacts:
+    name: RelWithDebInfo, MSan, and Architecture Artifacts
+    runs-on: ubuntu-24.04
+    container:
+      image: fedora:latest
+    steps:
+      - name: Install Fedora toolchain and Graphviz
+        run: |
+          dnf install -y \
+            gcc-c++ clang compiler-rt cmake ninja-build ccache \
+            pkgconf-pkg-config protobuf-compiler protobuf-devel \
+            tbb-devel systemd-devel gtest-devel graphviz git
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: extra-presets
+
+      - name: Verify RelWithDebInfo and MSan build presets
+        run: |
+          for preset in GNU_Default_RelWithDebInfo GNU_Custom_RelWithDebInfo Clang_Default_RelWithDebInfo Clang_Custom_RelWithDebInfo Clang_MSan; do
+            cmake --preset "$preset"
+            cmake --build --preset "$preset"
+          done
+
+      - name: Generate architecture graph and component benchmark report
+        run: |
+          cmake --preset GNU_Custom_Release
+          cmake --build --preset GNU_Custom_Release --target graphviz
+          cmake --build --preset GNU_Custom_Release --target tbb_algosBENCH_run
+
+      - name: Upload architecture diagram and benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: architecture-and-benchmark-artifacts
+          path: |
+            production_artifacts/graphviz/project.dot
+            production_artifacts/graphviz/project.svg
+            production_artifacts/profiling/tbb_algos_score_report.md

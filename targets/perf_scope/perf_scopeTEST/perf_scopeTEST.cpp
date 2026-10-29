@@ -1,7 +1,10 @@
 #include <gtest/gtest.h>
 #include <perf_scope/perf_scope.hpp>
 #include <filesystem>
+#include <functional>
 #include <numeric>
+#include <string>
+#include <system_error>
 #include <vector>
 
 namespace ps = target_layout_extended::perf_scope;

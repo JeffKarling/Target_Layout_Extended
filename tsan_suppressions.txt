@@ -1,0 +1,4 @@
+# Suppress false positive ThreadSanitizer reports caused by uninstrumented system oneTBB shared libraries and inline task handoffs
+called_from_lib:libtbb.so
+called_from_lib:libtbbmalloc.so
+race:tbb::detail::

@@ -12,4 +12,6 @@ target_link_libraries(${DIR_NAME}
         ${PROJECT_NAME}::database_manager
         ${PROJECT_NAME}::tbb_algos
         ${PROJECT_NAME}::db_export
+        ${PROJECT_NAME}::item_proto
+        ${PROJECT_NAME}::journal
 )

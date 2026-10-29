@@ -353,6 +353,9 @@
       "name": "Clang_TSan_Test",
       "displayName": "Clang TSan Test Suite",
       "configurePreset": "Clang_TSan",
+      "environment": {
+        "TSAN_OPTIONS": "suppressions='${sourceDir}/tsan_suppressions.txt'"
+      },
       "output": { "outputOnFailure": true },
       "execution": { "jobs": 8 }
     },
