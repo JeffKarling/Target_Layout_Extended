@@ -13,22 +13,22 @@ namespace target_layout_extended::database_manager {
         inline constexpr journal::catalog_entry k_init_failed{
             .message_id = "4c8a1023e5b94d719f012a34c8b5e101",
             .component = "database_manager",
-            .summary = "Database initialization failed at component boundary"
+            .summary = "Database initialization failure caught at component boundary"
         };
         inline constexpr journal::catalog_entry k_add_item_failed{
             .message_id = "4c8a1023e5b94d719f012a34c8b5e102",
             .component = "database_manager",
-            .summary = "Item insertion rejected at component boundary"
+            .summary = "Item insertion failure caught at component boundary"
         };
         inline constexpr journal::catalog_entry k_save_failed{
             .message_id = "4c8a1023e5b94d719f012a34c8b5e103",
             .component = "database_manager",
-            .summary = "Database serialization to disk failed"
+            .summary = "Database serialization failure caught at component boundary"
         };
         inline constexpr journal::catalog_entry k_load_failed{
             .message_id = "4c8a1023e5b94d719f012a34c8b5e104",
             .component = "database_manager",
-            .summary = "Database deserialization from disk failed"
+            .summary = "Database deserialization failure caught at component boundary"
         };
     } // namespace catalog
 

@@ -37,6 +37,31 @@ namespace target_layout_extended::journal {
                 nullptr
             );
         }
+
+        void send_unindexed_to_journal(
+            int priority,
+            std::string_view component,
+            std::string_view message,
+            std::source_location location
+        ) noexcept {
+            std::string const component_field = "COMPONENT=" + std::string(component);
+            std::string const file_field = "CODE_FILE=" + std::string(location.file_name());
+            std::string const line_field = "CODE_LINE=" + std::to_string(location.line());
+            std::string const func_field = "CODE_FUNC=" + std::string(location.function_name());
+            std::string const message_field =
+                "MESSAGE=[" + std::string(component) + "] " + std::string(message);
+            std::string const priority_field = "PRIORITY=" + std::to_string(priority);
+
+            (void)sd_journal_send(
+                "%s", message_field.c_str(),
+                "%s", priority_field.c_str(),
+                "%s", component_field.c_str(),
+                "%s", file_field.c_str(),
+                "%s", line_field.c_str(),
+                "%s", func_field.c_str(),
+                nullptr
+            );
+        }
     } // namespace
 
     void log_info(
@@ -53,6 +78,22 @@ namespace target_layout_extended::journal {
         std::source_location location
     ) noexcept {
         send_to_journal(LOG_ERR, entry, detail, location);
+    }
+
+    void log_info(
+        std::string_view component,
+        std::string_view message,
+        std::source_location location
+    ) noexcept {
+        send_unindexed_to_journal(LOG_INFO, component, message, location);
+    }
+
+    void log_error(
+        std::string_view component,
+        std::string_view message,
+        std::source_location location
+    ) noexcept {
+        send_unindexed_to_journal(LOG_ERR, component, message, location);
     }
 
     auto catch_boundary_exception(

@@ -1,34 +1,36 @@
 # systemd journald message catalog for component: database_manager
 
 -- 4c8a1023e5b94d719f012a34c8b5e101
-Subject: Database initialization failed at component boundary
+Subject: Database initialization failure caught at component boundary
 Defined-By: target_layout_extended::database_manager
 Support: https://github.com/JeffKarling/Target_Layout_Extended
 
-The database_store::initialize boundary call failed because the supplied path
-was empty or an existing database file could not be parsed.
+The database_store::initialize boundary proxy caught an exception from internal
+initialization because the supplied path was empty or an existing database file
+could not be parsed.
 
 -- 4c8a1023e5b94d719f012a34c8b5e102
-Subject: Item insertion rejected at component boundary
+Subject: Item insertion failure caught at component boundary
 Defined-By: target_layout_extended::database_manager
 Support: https://github.com/JeffKarling/Target_Layout_Extended
 
-The database_store::add_item boundary call rejected an Item record because its
-required id field was empty or memory allocation failed.
+The database_store::add_item boundary proxy caught an exception from internal
+validation or storage because the required id field was empty or memory
+allocation failed.
 
 -- 4c8a1023e5b94d719f012a34c8b5e103
-Subject: Database serialization to disk failed
+Subject: Database serialization failure caught at component boundary
 Defined-By: target_layout_extended::database_manager
 Support: https://github.com/JeffKarling/Target_Layout_Extended
 
-The database_store::save_to boundary call could not write the Protobuf snapshot
-because the parent directory does not exist, lacks write permission, or failed
-during stream serialization.
+The database_store::save_to boundary proxy caught an exception during internal
+Protobuf snapshot persistence because the parent directory does not exist,
+lacks write permission, or failed during stream serialization.
 
 -- 4c8a1023e5b94d719f012a34c8b5e104
-Subject: Database deserialization from disk failed
+Subject: Database deserialization failure caught at component boundary
 Defined-By: target_layout_extended::database_manager
 Support: https://github.com/JeffKarling/Target_Layout_Extended
 
-The database_store::load boundary call encountered a corrupted or unreadable
-Protobuf file on disk.
+The database_store::load boundary proxy caught an exception when internal file
+deserialization encountered a corrupted or unreadable Protobuf file on disk.

@@ -10,7 +10,7 @@ namespace target_layout_extended::db_export {
         inline constexpr journal::catalog_entry k_export_failed{
             .message_id = "8e4c9201b7a34d568f120c93e5d7b301",
             .component = "db_export",
-            .summary = "Failed to export database snapshot at component boundary"
+            .summary = "Database snapshot export failure caught at component boundary"
         };
     } // namespace catalog
 

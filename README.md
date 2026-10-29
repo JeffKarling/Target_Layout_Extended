@@ -1,8 +1,8 @@
 # Target Layout Extended
 
-*'The component is the CMake target, padded for production.'*
+*'The component is the CMake target, extended for production.'*
 
-This repository builds directly on **[Target Layout](https://github.com/JeffKarling/Target_Layout)**. Where the base project demonstrates the core rule in its smallest possible form, **Target Layout Extended** shows how a component scales in a real Linux C++ project with boundary exception safety, structured `systemd-journald` catalogs, zero noise hardware counter benchmarking, score driven optimization, multi compiler presets, static analysis, and runtime sanitizers.
+This repository builds directly on **[Target Layout](https://github.com/JeffKarling/Target_Layout)**. Where the base project demonstrates the core rule in its smallest possible form, **Target Layout Extended** shows how a physical component scales in a Linux C++ project with boundary exception handling, structured `systemd-journald` catalogs, isolated hardware counter benchmarking, score driven optimization, multi compiler presets, static analysis, and runtime sanitizers.
 
 ```text
 targets/
@@ -10,7 +10,7 @@ targets/
 ├── journal/                      <-- systemd-journald structured logging & Lippincott helper
 ├── perf_scope/                   <-- Linux perf_event_open counters & score curve evaluator
 ├── item_schema/                  <-- Top-level Protobuf code generation component
-├── database_manager/             <-- Canonical padded component
+├── database_manager/             <-- Canonical extended component
 │   ├── CMakeLists.txt
 │   ├── database_manager.cpp      <-- Private implementation + Lippincott boundary catch
 │   ├── database_helper.hpp       <-- Private helper header hidden from consumers

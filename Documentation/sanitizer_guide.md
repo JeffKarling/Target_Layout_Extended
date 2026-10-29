@@ -1,14 +1,14 @@
 # Runtime sanitizers
 
-**Target Layout Extended** provides seven runtime sanitizer presets across Clang and GCC. Sanitizers instrument every memory access, integer operation, and thread synchronization primitive at compile time so the compiled unit tests (`<name>TEST`) and `app` executable catch memory corruption, data races, uninitialized reads, and undefined behavior at runtime with exact source line stack traces.
+**Target Layout Extended** provides runtime sanitizer presets across Clang and GCC. Sanitizers instrument memory accesses, integer operations, and thread synchronization primitives at compile time so the compiled unit tests in `<name>TEST` and the `app` executable catch memory corruption, data races, uninitialized reads, and undefined behavior at runtime with source line stack traces.
 
-## 1. The three layer safety net
+## The three layer safety net
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
 │  Layer 1. Compile Time Warnings and Static Analysis         │
 │  • -Wall -Wextra -Wpedantic -Wconversion + Clang-Tidy       │
-│  • Zero runtime overhead                                    │
+│  • Compile time checks only                                 │
 └──────────────────────────────┬──────────────────────────────┘
                                │
 ┌──────────────────────────────▼──────────────────────────────┐
@@ -24,7 +24,7 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 2. Sanitizer preset summary
+## Sanitizer preset summary
 
 | Preset | Compiler | Bug family detected | Workflow preset |
 | --- | --- | --- | --- |
@@ -37,13 +37,13 @@
 | `GNU_UBSan` | `g++` | Undefined behavior across arithmetic and pointers | `GNU_UBSan_Verify` |
 
 > [!IMPORTANT]
-> Sanitizers are mutually exclusive because they use incompatible shadow memory layouts. Never combine `ASan`, `TSan`, and `MSan` in the same binary. Instead, run each sanitizer workflow preset sequentially.
+> Sanitizers are mutually exclusive because they use incompatible shadow memory layouts. Do not combine `ASan`, `TSan`, and `MSan` in the same binary. Instead, run each sanitizer workflow preset sequentially.
 
-## 3. Running unit tests under sanitizers
+## Running unit tests under sanitizers
 
 Unlike templates that disable unit tests during sanitizer builds, **Target Layout Extended** keeps `BUILD_TESTING` enabled so every component's `<name>TEST` suite is compiled and executed under the active sanitizer via `ctest`.
 
-Run a full configure, build, and test verification pass in one command using CMake workflow presets.
+Run a configure, build, and test verification pass in one command using CMake workflow presets.
 
 ```bash
 # Run all component unit tests under AddressSanitizer
@@ -68,11 +68,11 @@ cmake --preset Clang_ASan && cmake --build --preset Clang_ASan
 ./Build/Clang_ASan/targets/database_manager/database_managerTEST/database_managerTEST
 ```
 
-## 4. Key sanitizer implementation details
+## Key sanitizer implementation details
 
 In `cmake/templates/target_compile_options.cmake`, sanitizer flags are applied to both `target_compile_options` and `target_link_options`. Passing `-fsanitize=*` only at compile time or only at link time produces an uninstrumented or broken binary.
 
-* **Blocking UBSan in Clang (`-fno-sanitize-recover=undefined`).** By default, UBSan prints a warning and continues running, which allows `ctest` to report a passing exit code even when undefined behavior occurred. Adding `-fno-sanitize-recover=undefined` causes the test binary to abort immediately with a stack trace so `ctest` fails loudly.
-* **Position independent executables for TSan and LSan (`-fPIE` and `-pie`).** ThreadSanitizer and LeakSanitizer reserve specific virtual address shadow regions on Linux and require `-fPIE` at compile time and `-pie` at link time.
-* **Frame pointer preservation (`-fno-omit-frame-pointer` and `-fno-optimize-sibling-calls`).** Every sanitizer preset disables frame pointer omission and tail call elimination at `-O2` so fast shadow memory stack unwinders always produce complete, accurate call stacks.
-* **MemorySanitizer note (`Clang_MSan`).** MSan tracks uninitialized bit propagation across all instructions (`-fsanitize-memory-track-origins=2`). Because MSan requires every linked C++ library including `libstdc++` or `libc++` and `libprotobuf` to be compiled with `-fsanitize=memory` to avoid false positives inside uninstrumented system libraries, use `Clang_MSan` on self contained components that do not link prebuilt system shared libraries.
+* **Blocking UBSan in Clang.** By default, UBSan prints a warning and continues running, which allows `ctest` to report a passing exit code even when undefined behavior occurred. Adding `-fno-sanitize-recover=undefined` causes the test binary to abort with a stack trace so `ctest` fails cleanly.
+* **Position independent executables for TSan and LSan.** ThreadSanitizer and LeakSanitizer reserve specific virtual address shadow regions on Linux and require `-fPIE` at compile time and `-pie` at link time.
+* **Frame pointer preservation.** Every sanitizer preset passes `-fno-omit-frame-pointer` and `-fno-optimize-sibling-calls` at `-O2` so shadow memory stack unwinders produce complete call stacks.
+* **MemorySanitizer considerations.** `Clang_MSan` tracks uninitialized bit propagation across instructions via `-fsanitize-memory-track-origins=2`. Because MSan requires every linked C++ library including `libstdc++` or `libc++` and `libprotobuf` to be compiled with `-fsanitize=memory` to avoid false positives inside uninstrumented system libraries, use `Clang_MSan` on self contained components that do not link prebuilt system shared libraries.

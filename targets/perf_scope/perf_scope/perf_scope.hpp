@@ -48,8 +48,7 @@ namespace target_layout_extended::perf_scope {
         std::string_view decision{"continue_optimizing"};
     };
 
-    // RAII Linux perf_event_open hardware counter guard for zero-noise hot-path isolation.
-    // Replaces proprietary Intel ITT __itt_resume() / __itt_pause() instrumentation.
+    // RAII Linux perf_event_open hardware counter guard for isolated component benchmarking.
     class counter_guard {
     public:
         counter_guard() noexcept;
@@ -71,7 +70,7 @@ namespace target_layout_extended::perf_scope {
         std::int64_t _start_ns{0};
     };
 
-    // Executes a callable for the specified iteration count under a zero-noise counter_guard.
+    // Executes a callable for the specified iteration count under a hardware counter_guard.
     [[nodiscard]] auto measure_workload(
         std::size_t iterations,
         const std::function<void()>& workload

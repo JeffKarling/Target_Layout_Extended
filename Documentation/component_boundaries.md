@@ -1,29 +1,36 @@
 # Component boundaries and catalogs
 
-In a system built around physical components, the boundary between components is an architectural wall. A component consumer only sees `<name>/<name>.hpp` and links `${PROJECT_NAME}::<name>`. Everything else stays private inside `targets/<name>/`.
+In a system built around physical components, the boundary between components acts as an architectural wall. A component consumer only sees `<name>/<name>.hpp` and links `${PROJECT_NAME}::<name>`. Everything else stays private inside `targets/<name>/`.
 
-**Target Layout Extended** enforces two runtime disciplines at every component wall. First, exceptions never cross a component boundary. Second, every boundary failure is logged to `systemd-journald` using a documented catalog identifier stored inside the component directory.
+**Target Layout Extended** demonstrates two runtime practices at service and subsystem walls. First, exceptions thrown inside private internals are caught at the component boundary proxy before crossing into another CMake target. Second, boundary failures and internal diagnostics are recorded to `systemd-journald` through `targets/journal/`.
 
-## 1. Why exceptions must not cross component walls
+## Exception boundaries and when noexcept applies
 
-Inside a component's `.cpp` file, standard C++ exceptions and throwing standard library or third party calls are often convenient. However, allowing exceptions to escape across physical component boundaries introduces severe coupling.
+Inside a component's `.cpp` file, standard C++ exceptions and throwing standard library or third party calls are often convenient. However, allowing exceptions to escape across subsystem boundaries introduces coupling between targets.
 
 * **Hidden control flow.** A function signature in `<name>/<name>.hpp` does not declare which exception types its internal implementation or transitive `PRIVATE` dependencies might throw.
-* **ABI and compiler flag friction.** Propagating exceptions across boundaries requires uniform unwinding tables and matching exception semantics across all linked targets.
-* **Unclear failure ownership.** When an uncaught exception unwinds five components up the call stack, the stack context where the boundary contract actually failed is lost.
+* **ABI and compiler flag friction.** Propagating exceptions across boundaries requires uniform unwinding tables and matching exception semantics across linked targets.
+* **Unclear failure ownership.** When an uncaught exception unwinds across multiple components up the call stack, the context where the boundary contract was violated is harder to trace.
 
-To keep component interfaces narrow and deterministic, public functions in `<name>/<name>.hpp` are marked `noexcept` and return explicit status values.
+To keep subsystem interfaces narrow and predictable, public functions in operational components such as `database_manager`, `tbb_algos`, and `db_export` are marked `noexcept` and return explicit status values.
 
 ```cpp
 [[nodiscard]] auto initialize(const std::filesystem::path& db_path) noexcept -> bool;
 [[nodiscard]] auto add_item(const Item& item) noexcept -> bool;
 ```
 
-## 2. The Lippincott function pattern
+### Is noexcept mandatory in a component design
 
-Writing repetitive `try` and `catch` blocks with five different `catch` clauses inside every public method creates boilerplate clutter. Instead, **Target Layout Extended** uses a **Lippincott function** provided by `targets/journal/`.
+Marking public functions `noexcept` is an architectural pattern for operational and subsystem boundaries, not a mandatory rule for every component.
 
-A Lippincott function is a centralized exception handling routine called from a single `catch (...)` block at a `noexcept` boundary. It rethrows the active exception internally (`std::rethrow_exception(std::current_exception())`), decodes the concrete exception type in one shared place, records the diagnostic event, and returns a clean error status.
+* **Subsystem and service components.** Components that encapsulate I/O, thread pools, system calls, or third party libraries benefit from `noexcept` boundaries and Lippincott handlers because they act as firewalls between targets.
+* **Data schemas and value types.** Pure data components such as `targets/item_schema/` expose generated Protobuf classes whose constructors and mutators allocate memory and follow standard C++ exception semantics. Wrapping fine grained value types or inline accessors in `noexcept` boundary loggers would add unnecessary overhead.
+
+## The Lippincott function pattern
+
+Writing repetitive `try` and `catch` blocks with multiple `catch` clauses inside every public method creates boilerplate clutter. Instead, **Target Layout Extended** uses a **Lippincott function** provided by `targets/journal/`.
+
+A Lippincott function is a centralized exception handling routine called from a single `catch (...)` block at a `noexcept` boundary proxy. It rethrows the active exception internally via `std::rethrow_exception(std::current_exception())`, decodes the concrete exception type in one shared place, records the diagnostic event, and returns a clean error status.
 
 Here is how `targets/database_manager/database_manager.cpp` guards its public boundary.
 
@@ -50,54 +57,70 @@ auto database_store::add_item(const Item& item) noexcept -> bool {
 }
 ```
 
-Every public entry point in the component needs only a three line `catch (...)` block that delegates to `journal::catch_boundary_exception()`.
+The failure originates inside the private implementation or precondition check, while the public method acts as a boundary proxy that catches the exception and delegates to `journal::catch_boundary_exception()`.
 
-## 3. Structured `systemd-journald` logging and catalog IDs
+## Cataloged boundary logs versus non cataloged internal logs
 
-When `journal::catch_boundary_exception()` intercepts an exception, it does not print unstructured text to `stderr`. Instead, it emits a structured event to Linux `systemd-journald` via `sd_journal_send()` containing exact metadata fields.
+The `targets/journal/` component supports two distinct logging modes over `sd_journal_send()`. Both modes attach structured `COMPONENT`, `PRIORITY`, `CODE_FILE`, `CODE_LINE`, and `CODE_FUNC` fields captured via C++20 `std::source_location::current()`.
 
-* **`MESSAGE_ID`.** A 128 bit lowercase hexadecimal UUID uniquely identifying the public boundary condition.
-* **`COMPONENT`.** The physical component name matching `${DIR_NAME}`.
-* **`CODE_FILE`, `CODE_LINE`, and `CODE_FUNC`.** Captured automatically at the component boundary via C++20 `std::source_location::current()`.
-* **`PRIORITY`.** Syslog severity level (`LOG_ERR` or `LOG_CRIT`).
+### Cataloged boundary logs
 
-Each component declares its public catalog entries right in its public header (`database_manager/database_manager.hpp`).
+When an exception is caught at a component's public boundary proxy, `journal::catch_boundary_exception()` or `journal::log_error(entry, detail)` emits a structured event tied to a 128 bit hexadecimal `MESSAGE_ID`.
+
+Each operational component declares its public catalog entries in its public header, as seen in `database_manager/database_manager.hpp`.
 
 ```cpp
 namespace catalog {
     inline constexpr journal::catalog_entry k_init_failed{
         .message_id = "4c8a1023e5b94d719f012a34c8b5e101",
         .component = "database_manager",
-        .summary = "Database initialization failed at component boundary"
+        .summary = "Database initialization failure caught at component boundary"
     };
     inline constexpr journal::catalog_entry k_add_item_failed{
         .message_id = "4c8a1023e5b94d719f012a34c8b5e102",
         .component = "database_manager",
-        .summary = "Item insertion rejected at component boundary"
+        .summary = "Item insertion failure caught at component boundary"
     };
 } // namespace catalog
 ```
 
-## 4. The `.catalog` file as executable component documentation
+### Non cataloged internal logs
 
-In standard `systemd-journald`, a message catalog file maps 128 bit `MESSAGE_ID` UUIDs to human readable explanations, root causes, and support links.
+Not every internal error or diagnostic event warrants a permanent 128 bit UUID in `<name>.catalog`. For internal helper functions and operational diagnostics, `targets/journal/` provides non cataloged `journal::log_error(component, message)` and `journal::log_info(component, message)` overloads.
 
-In **Target Layout Extended**, every component owns its `<name>.catalog` file right inside `targets/<name>/<name>.catalog`.
+For example, `targets/database_manager/database_helper.cpp` logs a non cataloged error when an internal path check sees a missing parent directory.
+
+```cpp
+std::error_code ec;
+if (!std::filesystem::exists(parent, ec)) {
+    journal::log_error("database_manager", "parent directory does not exist for path: " + path.string());
+    return false;
+}
+```
+
+This event is still tagged with `COMPONENT=database_manager` and exact source file and line metadata in `systemd-journald`, keeping `<name>.catalog` reserved for public boundary contracts.
+
+## The catalog file as component documentation
+
+In standard `systemd-journald`, a message catalog file maps 128 bit `MESSAGE_ID` UUIDs to human readable explanations and support links.
+
+In **Target Layout Extended**, each operational component stores its `<name>.catalog` file inside `targets/<name>/<name>.catalog`.
 
 ```text
 # systemd journald message catalog for component: database_manager
 
 -- 4c8a1023e5b94d719f012a34c8b5e101
-Subject: Database initialization failed at component boundary
+Subject: Database initialization failure caught at component boundary
 Defined-By: target_layout_extended::database_manager
 Support: https://github.com/JeffKarling/Target_Layout_Extended
 
-The database_store::initialize boundary call failed because the supplied path
-was empty or an existing database file could not be parsed.
+The database_store::initialize boundary proxy caught an exception from internal
+initialization because the supplied path was empty or an existing database file
+could not be parsed.
 ```
 
-Colocating `<name>.catalog` inside the component folder turns logging into **living architectural documentation**.
+Colocating `<name>.catalog` inside the component folder keeps logging aligned with the code.
 
-* **Complete boundary specification.** A developer or AI agent inspecting `targets/database_manager/` reads `database_manager/database_manager.hpp` to see what functions can be called, and reads `database_manager.catalog` to see every failure mode that component can report at runtime.
-* **Zero search production triage.** When an operator or test runner queries `journalctl COMPONENT=database_manager` or filters by `MESSAGE_ID=4c8a1023e5b94d719f012a34c8b5e101`, the exact component folder and boundary explanation are immediately known.
-* **Unit tested catalog hygiene.** The component's unit test in `<name>TEST/` verifies that all declared `MESSAGE_ID` strings conform to the 32 character lowercase hexadecimal UUID rule and that invalid boundary inputs trigger clean `false` returns without leaking exceptions.
+* **Clear boundary specification.** A developer or AI agent inspecting `targets/database_manager/` reads `database_manager/database_manager.hpp` to see what functions can be called, and reads `database_manager.catalog` to see which internal failures the component boundary catches and reports.
+* **Direct production triage.** When an operator or test runner queries `journalctl COMPONENT=database_manager` or filters by `MESSAGE_ID=4c8a1023e5b94d719f012a34c8b5e101`, the component folder and boundary explanation are immediately available.
+* **Unit tested catalog hygiene.** The component's unit test in `<name>TEST/` verifies that declared `MESSAGE_ID` strings conform to the 32 character lowercase hexadecimal UUID rule and that invalid boundary inputs trigger clean `false` returns without leaking exceptions.

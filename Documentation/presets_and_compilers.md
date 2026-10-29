@@ -1,10 +1,10 @@
 # Presets and multi compiler workflow
 
-C++ projects face a tension between local developer velocity and downstream consumer portability. Developers need aggressive host CPU optimizations (`-march=native`), DWARF-5 debug symbols, frame pointers, and strict compiler warnings. Package maintainers and CI environments need neutral builds that compile on any x86-64 machine without hardcoded instruction set overrides.
+C++ projects face a tension between local developer velocity and downstream consumer portability. Developers need host CPU optimizations via `-march=native`, DWARF-5 debug symbols, frame pointers, and strict compiler warnings. Package maintainers and CI environments need neutral builds that compile on any x86-64 machine without hardcoded instruction set overrides.
 
-**Target Layout Extended** solves this through a **dual preset strategy** in `CMakePresets.json` across both **GNU GCC** (`g++`) and **LLVM Clang** (`clang++`).
+**Target Layout Extended** solves this through a **dual preset strategy** in `CMakePresets.json` across both **GNU GCC** and **LLVM Clang**.
 
-## 1. Custom versus default presets
+## Custom versus default presets
 
 Every compiler family defines two categories of presets.
 
@@ -35,20 +35,20 @@ Every compiler family defines two categories of presets.
 
 ### Custom development presets
 
-Named with `Custom` (`GNU_Custom_Debug`, `Clang_Custom_Debug`, `GNU_Custom_Release`, `Clang_Custom_Release`, `GNU_Custom_RelWithDebInfo`, `Clang_Custom_RelWithDebInfo`).
+Named with `Custom` such as `GNU_Custom_Debug`, `Clang_Custom_Debug`, `GNU_Custom_Release`, and `Clang_Custom_Release`.
 
 * **Host CPU instruction sets.** Passes `-march=native -O3 -ffast-math -fstack-protector-strong` in release builds to unlock AVX2, AVX-512, and FMA vectorization on the developer's machine.
-* **Accurate stack traces.** Debug and profiling builds enable `-gdwarf-5 -fno-omit-frame-pointer -fno-optimize-sibling-calls` so Linux `perf` call graphs and sanitizer stack traces never drop frames.
+* **Accurate stack traces.** Debug and profiling builds enable `-gdwarf-5 -fno-omit-frame-pointer -fno-optimize-sibling-calls` so Linux `perf` call graphs and sanitizer stack traces retain call frames.
 * **Strict warning profiles.** Enables `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wformat=2` plus compiler specific diagnostics.
 
 ### Default portable presets
 
-Named with `Default` (`GNU_Default_Debug`, `Clang_Default_Debug`, `GNU_Default_Release`, `Clang_Default_Release`).
+Named with `Default` such as `GNU_Default_Debug`, `Clang_Default_Debug`, `GNU_Default_Release`, and `Clang_Default_Release`.
 
-* **Zero opinion flags.** Relies on CMake's standard `Debug`, `Release`, and `RelWithDebInfo` build types without injecting `-march=native` or custom warning flags.
+* **Standard CMake flags.** Relies on CMake's built in `Debug`, `Release`, and `RelWithDebInfo` build types without injecting `-march=native` or custom warning flags.
 * **Distribution readiness.** Confirms that external users and CI pipelines can build the repository on any standard Linux machine.
 
-## 2. Why verify across both GNU GCC and LLVM Clang
+## Why verify across both GNU GCC and LLVM Clang
 
 Compiling and testing every component under both `g++` and `clang++` catches defects that a single compiler misses.
 
@@ -56,7 +56,7 @@ Compiling and testing every component under both `g++` and `clang++` catches def
 * **Independent optimizer passes.** Code that accidentally relies on undefined behavior often passes under one optimizer backend and fails unit tests under the other.
 * **Complementary sanitizer and STL hardening support.** GCC provides full structural iterator checking via `_GLIBCXX_DEBUG_PEDANTIC`, while Clang provides standalone `MemorySanitizer`, `ThreadSanitizer`, and `LeakSanitizer` presets.
 
-## 3. CMake workflow presets and `build_all.sh`
+## CMake workflow presets and build_all.sh
 
 CMake 3.25+ **workflow presets** chain configuration, compilation, and `ctest` execution into a single command for a given toolchain.
 

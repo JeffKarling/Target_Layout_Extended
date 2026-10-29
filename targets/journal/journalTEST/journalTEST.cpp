@@ -35,3 +35,8 @@ TEST(JournalTest, LippincottFunctionCatchesAllExceptionTypesAtBoundary) {
     EXPECT_FALSE(boundary_function_that_throws(2));
     EXPECT_FALSE(boundary_function_that_throws(3));
 }
+
+TEST(JournalTest, NonCatalogedLogsEmitStructuredComponentEvents) {
+    jrn::log_info("journal", "internal diagnostic trace without catalog UUID");
+    jrn::log_error("journal", "internal operational error without catalog UUID");
+}

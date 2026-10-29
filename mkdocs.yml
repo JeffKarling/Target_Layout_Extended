@@ -8,9 +8,9 @@ theme:
   name: material
 
 nav:
-  - Padded Component Anatomy: index.md
-  - Component Boundaries and Catalogs: component_boundaries.md
-  - Benchmarking and Score Optimization: benchmarking_and_profiling.md
-  - Presets and Multi Compiler Workflow: presets_and_compilers.md
-  - Static Analysis and Deep Debug: static_analysis_and_debug.md
-  - Runtime Sanitizers: sanitizer_guide.md
+  - How it works: index.md
+  - Component boundaries and catalogs: component_boundaries.md
+  - Benchmarking and score optimization: benchmarking_and_profiling.md
+  - Presets and multi compiler workflow: presets_and_compilers.md
+  - Static analysis and deep debug: static_analysis_and_debug.md
+  - Runtime sanitizers: sanitizer_guide.md

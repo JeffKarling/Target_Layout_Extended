@@ -1,12 +1,25 @@
-[Base Target Layout](https://github.com/JeffKarling/Target_Layout) | [Base Documentation](https://jeffkarling.github.io/Target_Layout/)
+[Base Target Layout](https://github.com/JeffKarling/Target_Layout) | [Base Documentation](https://jeffkarling.github.io/Target_Layout/) | [Why Target Layout](https://jeffkarling.github.io/Target_Layout/why_target_layout/)
 
-# Padded component anatomy
+# How it works
 
-**Target Layout Extended** builds directly on the foundation established in **[Target Layout](https://jeffkarling.github.io/Target_Layout/)**. In the base repository, every directory under `targets/` represents one physical component and one CMake target where the directory, target, translation unit, public header, namespace, and unit test share a single name.
+**Target Layout Extended** builds directly on the architectural foundation of **[Target Layout](https://jeffkarling.github.io/Target_Layout/)**. Before exploring the production extensions in this repository, it helps to review why the base layout exists and what core values it establishes.
 
-This extended template demonstrates what happens when that minimal skeleton is **padded for high velocity Linux production engineering**. Every production feature lives inside the exact same self contained component boundary.
+## Core ideas from Target Layout
 
-## 1. Anatomy of a padded component
+Traditional C++ layouts such as the Pitchfork Layout organize repositories by file extension across top level `include/`, `src/`, and `tests/` trees. Grouping files by artifact type rather than compilation boundaries scatters each component across three directory hierarchies and encourages coarse library targets.
+
+**[Target Layout](https://jeffkarling.github.io/Target_Layout/)** combines John Lakos' physical component model from *Large Scale C++ Software Design* with the convention over configuration ergonomics of Rust's Cargo workspaces.
+
+* **The component is the CMake target.** Every directory under `targets/` represents one physical component and one static CMake target.
+* **One to one naming symmetry.** The component directory, CMake target, public header, translation unit, C++ namespace, and unit test share a single name derived automatically from the folder name via `${DIR_NAME}`.
+* **Compiler enforced boundaries and cycle free design.** Components receive no include paths to sibling components unless they explicitly link them. Because every component is a static CMake target, CMake enforces an acyclic dependency graph at configure and link time.
+* **Full context colocation.** Placing the public contract, private implementation, build script, and unit test in one folder lets human developers and AI coding assistants understand or refactor a component without searching across multiple directory trees.
+
+For the full rationale behind physical component organization and delegated naming, see **[Why Target Layout](https://jeffkarling.github.io/Target_Layout/why_target_layout/)**.
+
+## Anatomy of an extended component
+
+Where the base project keeps each component as small as possible to teach the core naming rule, **Target Layout Extended** demonstrates how that same single folder boundary scales to production Linux engineering. Boundary exception handling, structured `systemd-journald` catalogs, isolated hardware counter benchmarks, score driven optimization baselines, static analysis, and runtime sanitizers all live inside the same component layout.
 
 Consider the `database_manager` and `tbb_algos` components under `targets/`.
 
@@ -40,18 +53,18 @@ targets/
 
 Each file inside the component folder serves a distinct architectural role.
 
-* **Public contract in `<name>/<name>.hpp`.** Exposed via CMake `FILE_SET TYPE HEADERS` so consumers write `#include <database_manager/database_manager.hpp>`. Public functions are marked `noexcept` and expose narrow types along with public log catalog identifiers.
-* **Private implementation in `<name>.cpp`.** Implements the component logic and catches all internal exceptions at the boundary using a centralized Lippincott handler.
-* **Private helpers in `<helper>.hpp` and `<helper>.cpp`.** Internal helper files such as `database_helper.hpp` sit at the root of the component folder outside the `PUBLIC FILE_SET`. They help split internal implementation logic across manageable files without exposing those details to downstream targets.
-* **Boundary log catalog in `<name>.catalog`.** A native `systemd-journald` message catalog documenting every `MESSAGE_ID` emitted at the component boundary. Reading `<name>.hpp` alongside `<name>.catalog` gives humans and AI agents the complete static and runtime contract of the component.
+* **Public contract in `<name>/<name>.hpp`.** Exposed via CMake `FILE_SET TYPE HEADERS` so consumers write `#include <database_manager/database_manager.hpp>`. For service and subsystem boundaries, public functions are marked `noexcept` and expose narrow types alongside public log catalog identifiers. Data schema components and simple value types do not require `noexcept` wrappers.
+* **Private implementation in `<name>.cpp`.** Implements the component logic and catches internal exceptions at the boundary proxy using a centralized Lippincott handler.
+* **Private helpers in `<helper>.hpp` and `<helper>.cpp`.** Internal helper files such as `database_helper.hpp` sit at the root of the component folder outside the `PUBLIC FILE_SET`. They split internal implementation logic across manageable files without exposing those details to downstream targets.
+* **Boundary log catalog in `<name>.catalog`.** A native `systemd-journald` message catalog documenting every `MESSAGE_ID` emitted when the component boundary catches an internal failure. Reading `<name>.hpp` alongside `<name>.catalog` gives humans and AI agents the static and runtime contract of the component.
 * **Colocated unit test in `<name>TEST/`.** A dedicated GoogleTest executable target that derives its parent component name automatically from `${DIR_NAME}` and verifies functional behavior and boundary error handling in isolation.
-* **Colocated benchmark in `<name>BENCH/`.** A dedicated hardware counter benchmark target that links `target_layout_extended::perf_scope` and evaluates component performance against the birth metrics and human utility curve stored in `baseline.json`.
+* **Colocated benchmark in `<name>BENCH/`.** A dedicated hardware counter benchmark target that links `target_layout_extended::perf_scope` and evaluates component performance against the birth metrics and utility curve stored in `baseline.json`.
 
-## 2. Centralized target configuration without custom macros
+## Centralized target configuration without custom macros
 
-In base **Target Layout**, compiler flags are kept minimal in the root `CMakeLists.txt`. In a larger project with custom debug profiles, standard library hardening, static analysis, sanitizers, and link time optimization, repeating flags in every component would violate DRY principles.
+In base **Target Layout**, compiler flags are kept minimal in the root `CMakeLists.txt`. In a larger project with custom debug profiles, standard library hardening, static analysis, sanitizers, and link time optimization, repeating flags in every component would duplicate configuration across directories.
 
-Because every component binds its name to `${DIR_NAME}`, **Target Layout Extended** shares all target properties and compiler options through two plain CMake scripts included by each component.
+Because every component binds its name to `${DIR_NAME}`, **Target Layout Extended** shares target properties and compiler options through two plain CMake scripts included by each component.
 
 ```cmake
 cmake_path(GET CMAKE_CURRENT_LIST_DIR FILENAME DIR_NAME)
@@ -63,11 +76,11 @@ include(${CMAKE_BINARY_DIR}/target_properties.cmake)
 include(${CMAKE_BINARY_DIR}/target_compile_options.cmake)
 ```
 
-* **No custom wrapper functions.** Components still use standard `add_library()`, `target_sources()`, and `target_link_libraries()` calls rather than opaque `my_project_add_component()` macros.
+* **No custom wrapper functions.** Components still use standard `add_library()`, `target_sources()`, and `target_link_libraries()` calls rather than opaque wrapper macros.
 * **Uniform properties across targets.** `target_properties.cmake` configures C++23 standard requirements, link time optimization via `INTERPROCEDURAL_OPTIMIZATION`, `clang-tidy`, `include-what-you-use`, `cppcheck`, and `OPTIMIZE_DEPENDENCIES`.
 * **Generator expression flag matrices.** `target_compile_options.cmake` applies compiler flags, hardening macros, and sanitizer link flags per configuration across GCC and Clang.
 
-## 3. Code generation as a first class sibling component
+## Code generation as a first class sibling component
 
 Base **Target Layout** explains why code generation belongs in its own component directory. In **Target Layout Extended**, `targets/item_schema/` validates this pattern with Google Protobuf.
 
@@ -106,11 +119,11 @@ target_sources(${DIR_NAME}
 target_link_libraries(${DIR_NAME} PUBLIC PkgConfig::protobuf)
 ```
 
-* **Schema input lives in version control.** The `.proto` file lives at `targets/item_schema/item_schema/item_schema.proto` while generated `.pb.h` and `.pb.cc` files stay strictly inside `${CMAKE_CURRENT_BINARY_DIR}`.
-* **Transparent `FILE_SET` consumption.** By setting `BASE_DIRS ${CMAKE_CURRENT_BINARY_DIR}` on the `PUBLIC FILE_SET`, downstream components like `database_manager` and `db_export` simply link `${PROJECT_NAME}::item_schema` and write `#include <item_schema/item_schema.pb.h>`.
+* **Schema input lives in version control.** The `.proto` file lives at `targets/item_schema/item_schema/item_schema.proto` while generated `.pb.h` and `.pb.cc` files stay inside `${CMAKE_CURRENT_BINARY_DIR}`.
+* **Transparent `FILE_SET` consumption.** By setting `BASE_DIRS ${CMAKE_CURRENT_BINARY_DIR}` on the `PUBLIC FILE_SET`, downstream components like `database_manager` and `db_export` link `${PROJECT_NAME}::item_schema` and write `#include <item_schema/item_schema.pb.h>`.
 * **Isolated warning and analysis policies.** Machine generated C++ code often triggers pedantic compiler or `clang-tidy` warnings. Keeping `item_schema` as its own component isolates static analysis suppression to the generated code while hand written components stay under strict checks.
 
-## 4. Executables follow the exact same rule
+## Executables follow the same naming rule
 
 The composition root in `targets/app/` has no special naming exceptions.
 
@@ -132,12 +145,12 @@ target_link_libraries(${DIR_NAME}
 
 It derives `app` from its folder name, applies the shared target properties and compiler options, and links its direct dependencies privately.
 
-## 5. Architecture dependency graph export
+## Architecture dependency graph export
 
-Because every component is a one to one CMake target, `cmake/graphviz.cmake` exposes a built in `graphviz` target that exports the exact physical architecture of the repository.
+Because every component is a one to one CMake target, `cmake/graphviz.cmake` exposes a built in `graphviz` target that exports the physical architecture of the repository.
 
 ```bash
 cmake --build --preset GNU_Custom_Debug --target graphviz
 ```
 
-This generates `production_artifacts/graphviz/project.dot` and renders `production_artifacts/graphviz/project.svg`. Both human engineers and AI coding assistants can inspect `project.dot` to see every component and its `PUBLIC` versus `PRIVATE` links in a single step.
+This generates `production_artifacts/graphviz/project.dot` and renders `production_artifacts/graphviz/project.svg`. Both human engineers and AI coding assistants can inspect `project.dot` to see every component and its `PUBLIC` versus `PRIVATE` links in one place.

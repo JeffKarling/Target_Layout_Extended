@@ -22,13 +22,13 @@ namespace target_layout_extended::perf_scope {
         inline constexpr jrn::catalog_entry k_baseline_io_error{
             .message_id = "9b2e5a11c4d74f08a6123e89f1b4d002",
             .component = "perf_scope",
-            .summary = "Failed to read or write component benchmark baseline file"
+            .summary = "Baseline file I/O failure caught at component boundary"
         };
 
         inline constexpr jrn::catalog_entry k_workload_exception{
             .message_id = "9b2e5a11c4d74f08a6123e89f1b4d003",
             .component = "perf_scope",
-            .summary = "Exception thrown during component benchmark measurement"
+            .summary = "Benchmark workload exception caught at component boundary"
         };
 
         [[nodiscard]] auto open_hw_counter(std::uint64_t config, int group_fd) noexcept -> int {

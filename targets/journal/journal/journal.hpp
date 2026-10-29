@@ -17,7 +17,7 @@ namespace target_layout_extended::journal {
         inline constexpr catalog_entry k_unhandled_boundary_exception{
             .message_id = "7a1d4f90e3c84a21b5809e41d2a7c001",
             .component = "journal",
-            .summary = "Unhandled exception intercepted at component boundary"
+            .summary = "Unhandled exception caught at component boundary"
         };
     } // namespace catalog
 
@@ -36,17 +36,31 @@ namespace target_layout_extended::journal {
         return true;
     }
 
-    // Emits a structured informational event to systemd-journald tied to a component catalog ID.
+    // Emits a structured informational event tied to a documented component catalog MESSAGE_ID.
     void log_info(
         const catalog_entry& entry,
         std::string_view detail,
         std::source_location location = std::source_location::current()
     ) noexcept;
 
-    // Emits a structured error event to systemd-journald tied to a component catalog ID.
+    // Emits a structured error event tied to a documented component catalog MESSAGE_ID.
     void log_error(
         const catalog_entry& entry,
         std::string_view detail,
+        std::source_location location = std::source_location::current()
+    ) noexcept;
+
+    // Emits a non-cataloged structured informational event for internal component diagnostics.
+    void log_info(
+        std::string_view component,
+        std::string_view message,
+        std::source_location location = std::source_location::current()
+    ) noexcept;
+
+    // Emits a non-cataloged structured error event for internal operational diagnostics.
+    void log_error(
+        std::string_view component,
+        std::string_view message,
         std::source_location location = std::source_location::current()
     ) noexcept;
 

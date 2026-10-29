@@ -1,4 +1,5 @@
 #include "database_helper.hpp"
+#include <journal/journal.hpp>
 #include <fstream>
 #include <system_error>
 
@@ -14,6 +15,7 @@ namespace target_layout_extended::database_manager::detail {
         }
         std::error_code ec;
         if (!std::filesystem::exists(parent, ec)) {
+            journal::log_error("database_manager", "parent directory does not exist for path: " + path.string());
             return false;
         }
         return (std::filesystem::status(parent, ec).permissions() & std::filesystem::perms::owner_write) !=

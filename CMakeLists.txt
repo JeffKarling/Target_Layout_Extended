@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.25)
 
 project(target_layout_extended
-        VERSION 1.0.0
+        VERSION 1.1.0
         DESCRIPTION "Production C++ patterns built on Target Layout"
         HOMEPAGE_URL "https://github.com/JeffKarling/Target_Layout_Extended"
         LANGUAGES CXX
