@@ -40,10 +40,10 @@ namespace target_layout_extended::journal {
 
         void send_unindexed_to_journal(
             int priority,
-            std::string_view component,
             std::string_view message,
             std::source_location location
         ) noexcept {
+            std::string_view const component = extract_component(location.file_name());
             std::string const component_field = "COMPONENT=" + std::string(component);
             std::string const file_field = "CODE_FILE=" + std::string(location.file_name());
             std::string const line_field = "CODE_LINE=" + std::to_string(location.line());
@@ -81,19 +81,17 @@ namespace target_layout_extended::journal {
     }
 
     void log_info(
-        std::string_view component,
         std::string_view message,
         std::source_location location
     ) noexcept {
-        send_unindexed_to_journal(LOG_INFO, component, message, location);
+        send_unindexed_to_journal(LOG_INFO, message, location);
     }
 
     void log_error(
-        std::string_view component,
         std::string_view message,
         std::source_location location
     ) noexcept {
-        send_unindexed_to_journal(LOG_ERR, component, message, location);
+        send_unindexed_to_journal(LOG_ERR, message, location);
     }
 
     auto catch_boundary_exception(

@@ -24,7 +24,7 @@ To keep subsystem interfaces narrow and predictable, public functions in operati
 Marking public functions `noexcept` is an architectural pattern for operational and subsystem boundaries, not a mandatory rule for every component.
 
 * **Subsystem and service components.** Components that encapsulate I/O, thread pools, system calls, or third party libraries benefit from `noexcept` boundaries and Lippincott handlers because they act as firewalls between targets.
-* **Data schemas and value types.** Pure data components such as `targets/item_schema/` expose generated Protobuf classes whose constructors and mutators allocate memory and follow standard C++ exception semantics. Wrapping fine grained value types or inline accessors in `noexcept` boundary loggers would add unnecessary overhead.
+* **Data schemas and value types.** Pure data components such as `targets/item_proto/` expose generated Protobuf classes whose constructors and mutators allocate memory and follow standard C++ exception semantics. Wrapping fine grained value types or inline accessors in `noexcept` boundary loggers would add unnecessary overhead.
 
 ## The Lippincott function pattern
 
@@ -86,14 +86,14 @@ namespace catalog {
 
 ### Non cataloged internal logs
 
-Not every internal error or diagnostic event warrants a permanent 128 bit UUID in `<name>.catalog`. For internal helper functions and operational diagnostics, `targets/journal/` provides non cataloged `journal::log_error(component, message)` and `journal::log_info(component, message)` overloads.
+Not every internal error or diagnostic event warrants a permanent 128 bit UUID in `<name>.catalog`. For internal helper functions and operational diagnostics, `targets/journal/` provides non cataloged `journal::log_error(message)` and `journal::log_info(message)` overloads that deduce the component name implicitly under the one name rule.
 
 For example, `targets/database_manager/database_helper.cpp` logs a non cataloged error when an internal path check sees a missing parent directory.
 
 ```cpp
 std::error_code ec;
 if (!std::filesystem::exists(parent, ec)) {
-    journal::log_error("database_manager", "parent directory does not exist for path: " + path.string());
+    journal::log_error("parent directory does not exist for path: " + path.string());
     return false;
 }
 ```
