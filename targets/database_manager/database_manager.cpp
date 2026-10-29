@@ -4,10 +4,55 @@
 #include <journal/journal.hpp>
 #include <cstddef>
 #include <fstream>
+#include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace target_layout_extended::database_manager {
+
+    database_store::database_store(std::filesystem::path db_path) noexcept
+        : _db_path(std::move(db_path)) {
+        if (!_db_path.empty()) {
+            (void)load();
+        }
+    }
+
+    database_store::database_store(database_store&& other) noexcept {
+        std::scoped_lock const lock(other._db_mutex);
+        _db_path = std::move(other._db_path);
+        _database = std::move(other._database);
+    }
+
+    auto database_store::operator=(database_store&& other) noexcept -> database_store& {
+        if (this != &other) {
+            std::scoped_lock const lock(_db_mutex, other._db_mutex);
+            _db_path = std::move(other._db_path);
+            _database = std::move(other._database);
+        }
+        return *this;
+    }
+
+    auto database_store::open(const std::filesystem::path& db_path) noexcept -> std::optional<database_store> {
+        try {
+            if (db_path.empty()) {
+                throw std::invalid_argument("database path must not be empty");
+            }
+            database_store store;
+            if (!store.initialize(db_path)) {
+                return std::nullopt;
+            }
+            return store;
+        } catch (...) {
+            (void)journal::catch_boundary_exception(catalog::k_init_failed);
+            return std::nullopt;
+        }
+    }
+
+    auto database_store::is_open() const noexcept -> bool {
+        std::scoped_lock const lock(_db_mutex);
+        return !_db_path.empty();
+    }
 
     auto database_store::initialize(const std::filesystem::path& db_path) noexcept -> bool {
         try {

@@ -6,7 +6,7 @@
 
 namespace target_layout_extended::tbb_algos {
 
-    auto parallel_double(std::vector<int>& numbers) noexcept -> bool {
+    auto parallel_double(std::span<int> numbers) noexcept -> bool {
         try {
             oneapi::tbb::parallel_for_each(numbers.begin(), numbers.end(), [](int& num) noexcept {
                 num *= 2;
@@ -18,7 +18,7 @@ namespace target_layout_extended::tbb_algos {
     }
 
     auto parallel_trig_work(
-        std::vector<double>& values,
+        std::span<double> values,
         std::size_t inner_iterations
     ) noexcept -> bool {
         try {

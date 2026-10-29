@@ -23,9 +23,9 @@ int main() {
   std::error_code err_code;
   std::filesystem::remove(db_path, err_code);
 
-  dm::database_store store;
-  if (!store.initialize(db_path)) {
-    jrn::log_error("Failed to initialize database_manager");
+  auto store = dm::database_store::open(db_path);
+  if (!store) {
+    jrn::log_error("Failed to open database_manager");
     return 1;
   }
 
@@ -40,24 +40,24 @@ int main() {
     item.set_id("ITEM_" + std::to_string(i + 1U));
     item.set_name("Component Item " + std::to_string(i + 1U));
     item.set_value(static_cast<double>(numbers.at(i)));
-    if (!store.add_item(item)) {
+    if (!store->add_item(item)) {
       jrn::log_error("Failed to add item to database_manager");
       return 1;
     }
   }
 
-  if (!store.save()) {
+  if (!store->save()) {
     jrn::log_error("Failed to save database snapshot");
     return 1;
   }
 
-  std::string formatted;
-  if (!de::format_database_snapshot(db_path, formatted)) {
+  auto const formatted = de::format_database_snapshot(db_path);
+  if (!formatted) {
     jrn::log_error("Failed to format database snapshot");
     return 1;
   }
 
-  jrn::log_info(formatted);
+  jrn::log_info(*formatted);
   std::filesystem::remove(db_path, err_code);
   return 0;
 }

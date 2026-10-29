@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <mutex>
+#include <optional>
 #include <vector>
 #include <item_proto/item_proto.pb.h>
 #include <journal/journal.hpp>
@@ -38,8 +39,13 @@ namespace target_layout_extended::database_manager {
         ~database_store() = default;
         database_store(const database_store&) = delete;
         auto operator=(const database_store&) -> database_store& = delete;
-        database_store(database_store&&) = delete;
-        auto operator=(database_store&&) -> database_store& = delete;
+        database_store(database_store&& other) noexcept;
+        auto operator=(database_store&& other) noexcept -> database_store&;
+
+        static auto open(const std::filesystem::path& db_path) noexcept -> std::optional<database_store>;
+        explicit database_store(std::filesystem::path db_path) noexcept;
+
+        [[nodiscard]] auto is_open() const noexcept -> bool;
 
         [[nodiscard]] auto initialize(const std::filesystem::path& db_path) noexcept -> bool;
         [[nodiscard]] auto add_item(const Item& item) noexcept -> bool;

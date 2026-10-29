@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <span>
 #include <vector>
 #include <journal/journal.hpp>
 
@@ -16,12 +17,12 @@ namespace target_layout_extended::tbb_algos {
 
     inline constexpr std::size_t k_default_trig_iterations = 2500U;
 
-    // Doubles every element in parallel using oneTBB.
-    [[nodiscard]] auto parallel_double(std::vector<int>& numbers) noexcept -> bool;
+    // Doubles every element in parallel using oneTBB across any contiguous container or slice.
+    [[nodiscard]] auto parallel_double(std::span<int> numbers) noexcept -> bool;
 
-    // Performs a CPU-intensive parallel trigonometric reduction over a vector for hardware benchmarking.
+    // Performs a CPU-intensive parallel trigonometric reduction over a contiguous span for hardware benchmarking.
     [[nodiscard]] auto parallel_trig_work(
-        std::vector<double>& values,
+        std::span<double> values,
         std::size_t inner_iterations = k_default_trig_iterations
     ) noexcept -> bool;
 

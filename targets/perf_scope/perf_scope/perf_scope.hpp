@@ -1,13 +1,18 @@
 #pragma once
 
+#include <algorithm>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
-#include <functional>
 #include <string>
 #include <string_view>
 
 namespace target_layout_extended::perf_scope {
+
+    namespace detail {
+        void record_workload_exception() noexcept;
+    }
 
     // Physical hardware and timing metrics captured strictly across a component's hot path.
     struct hardware_metrics {
@@ -75,10 +80,26 @@ namespace target_layout_extended::perf_scope {
     };
 
     // Executes a callable for the specified iteration count under a hardware counter_guard.
-    [[nodiscard]] auto measure_workload(
+    template <typename Callable>
+        requires std::invocable<Callable>
+    [[nodiscard]] inline auto measure_workload(
         std::size_t iterations,
-        const std::function<void()>& workload
-    ) noexcept -> hardware_metrics;
+        Callable&& workload
+    ) noexcept -> hardware_metrics {
+        try {
+            std::size_t const count = std::max<std::size_t>(1U, iterations);
+            workload();
+
+            counter_guard guard;
+            for (std::size_t i = 0U; i < count; ++i) {
+                workload();
+            }
+            return guard.stop(count);
+        } catch (...) {
+            detail::record_workload_exception();
+            return hardware_metrics{};
+        }
+    }
 
     // Loads a component birth baseline from JSON on disk, or writes default_baseline if missing.
     [[nodiscard]] auto load_or_create_baseline(

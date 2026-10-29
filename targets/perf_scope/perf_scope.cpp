@@ -174,6 +174,7 @@ namespace target_layout_extended::perf_scope {
             _fd_branch_misses = open_hw_counter(PERF_COUNT_HW_BRANCH_MISSES, _fd_cycles);
             _fd_cache_misses = open_hw_counter(PERF_COUNT_HW_CACHE_MISSES, _fd_cycles);
         }
+        start();
     }
 
     counter_guard::~counter_guard() noexcept {
@@ -227,24 +228,9 @@ namespace target_layout_extended::perf_scope {
         return metrics;
     }
 
-    auto measure_workload(
-        std::size_t iterations,
-        const std::function<void()>& workload
-    ) noexcept -> hardware_metrics {
-        try {
-            std::size_t const count = std::max<std::size_t>(1U, iterations);
-            // Warm up instruction and data caches once before enabling counters
-            workload();
-
-            counter_guard guard;
-            guard.start();
-            for (std::size_t i = 0U; i < count; ++i) {
-                workload();
-            }
-            return guard.stop(count);
-        } catch (...) {
+    namespace detail {
+        void record_workload_exception() noexcept {
             (void)jrn::catch_boundary_exception(k_workload_exception);
-            return hardware_metrics{};
         }
     }
 

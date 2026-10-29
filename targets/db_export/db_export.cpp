@@ -8,9 +8,8 @@
 namespace target_layout_extended::db_export {
 
     auto format_database_snapshot(
-        const std::filesystem::path& db_path,
-        std::string& formatted_output
-    ) noexcept -> bool {
+        const std::filesystem::path& db_path
+    ) noexcept -> std::optional<std::string> {
         try {
             if (db_path.empty()) {
                 throw std::invalid_argument("database path is empty");
@@ -36,10 +35,10 @@ namespace target_layout_extended::db_export {
                     << " | Value: " << item.value() << "\n";
             }
             out << "----------------------------------------\n";
-            formatted_output = out.str();
-            return true;
+            return out.str();
         } catch (...) {
-            return journal::catch_boundary_exception(catalog::k_export_failed);
+            (void)journal::catch_boundary_exception(catalog::k_export_failed);
+            return std::nullopt;
         }
     }
 

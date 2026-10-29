@@ -24,14 +24,14 @@ TEST(DbExportTest, FormatsSavedDatabaseSnapshot) {
     ASSERT_TRUE(store.add_item(item));
     ASSERT_TRUE(store.save());
 
-    std::string output;
-    EXPECT_TRUE(de::format_database_snapshot(test_db, output));
-    EXPECT_NE(output.find("EXP_01"), std::string::npos);
+    auto const output = de::format_database_snapshot(test_db);
+    ASSERT_TRUE(output.has_value());
+    EXPECT_NE(output->find("EXP_01"), std::string::npos);
 
     std::filesystem::remove(test_db, ec);
 }
 
 TEST(DbExportTest, BoundaryCatchesMissingFileWithoutThrowing) {
-    std::string output;
-    EXPECT_FALSE(de::format_database_snapshot("non_existent_db_file.pb", output));
+    auto const output = de::format_database_snapshot("non_existent_db_file.pb");
+    EXPECT_FALSE(output.has_value());
 }

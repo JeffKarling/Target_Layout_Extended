@@ -18,6 +18,17 @@ TEST(PerfScopeTest, MeasuresHotWorkloadMetrics) {
     EXPECT_GT(metrics.wall_ns_per_op, 0.0);
 }
 
+TEST(PerfScopeTest, CounterGuardStartsOnConstruction) {
+    ps::counter_guard guard;
+    volatile int dummy = 0;
+    for (int i = 0; i < 1000; ++i) {
+        dummy += i;
+    }
+    (void)dummy;
+    auto const metrics = guard.stop(1000U);
+    EXPECT_GT(metrics.wall_ns_per_op, 0.0);
+}
+
 TEST(PerfScopeTest, EvaluatesDiminishingReturnsAndSavesBaseline) {
     std::filesystem::path const temp_baseline = "test_perf_baseline.json";
     std::error_code ec;

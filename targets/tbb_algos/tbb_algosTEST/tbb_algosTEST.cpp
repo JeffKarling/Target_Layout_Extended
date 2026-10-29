@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <tbb_algos/tbb_algos.hpp>
+#include <array>
 #include <string>
 #include <vector>
 
@@ -10,6 +11,14 @@ TEST(TbbAlgosTest, ParallelDoubleDoublesValues) {
     EXPECT_TRUE(ta::parallel_double(numbers));
 
     std::vector<int> const expected = {2, 4, 6, 8, 10};
+    EXPECT_EQ(numbers, expected);
+}
+
+TEST(TbbAlgosTest, ParallelDoubleAcceptsSpanFromStackArray) {
+    std::array<int, 5> numbers = {10, 20, 30, 40, 50};
+    EXPECT_TRUE(ta::parallel_double(numbers));
+
+    std::array<int, 5> const expected = {20, 40, 60, 80, 100};
     EXPECT_EQ(numbers, expected);
 }
 
