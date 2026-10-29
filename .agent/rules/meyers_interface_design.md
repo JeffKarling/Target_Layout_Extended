@@ -2,44 +2,76 @@
 
 ## Core mandate
 
-Every public API, boundary proxy, and component interface must follow the primary design guideline articulated by Scott Meyers. Make interfaces easy to use correctly and hard to use incorrectly.
+Every public API, class, function, and component boundary must follow the primary design guideline articulated by Scott Meyers. Make interfaces easy to use correctly and hard to use incorrectly.
 
-When designing or reviewing C++ interfaces in this project, agents must apply the following rules.
+The designer of an interface is accountable for client errors. If smart and conscientious developers make mistakes using an API, the interface design itself is defective.
 
-## Eliminate redundant parameters
+If an attempted use of an interface would violate expectations, the code must not compile. If the code compiles, it must behave as the client expects.
 
-Do not force the caller to supply information that the compiler or runtime already knows.
+## Strong typing by default
 
-In a component architecture under the one name rule, the physical source location already identifies the owning component. Functions must deduce ambient architectural metadata from `std::source_location` rather than demanding explicit string literals at call sites.
+Express domain concepts in dedicated strong types instead of raw primitives.
 
-If a parameter can be deduced or defaulted safely, eliminate it from the caller parameter list.
+Raw integers, floating point numbers, and strings lack semantic intent. Using raw primitives invites primitive obsession and silent logic bugs.
+
+Strong typing is recommended regardless of parameter count. A single parameter function like `set_timeout(Milliseconds ms)` prevents callers from mistakenly passing raw numbers or seconds. Similarly, `find_user(UserId id)` prevents callers from passing raw strings or email addresses.
+
+Wrap primitive types in lightweight structs or scoped enums. Strong types turn conceptual mistakes into compile time errors.
+
+## Restrict the value space and eliminate invalid states
+
+Design types and signatures so that invalid states cannot be represented.
+
+Use scoped enums rather than integers or boolean flags for modes, options, and status codes. Boolean flags in function signatures are ambiguous and error prone at call sites. Scoped enums make the intent explicit and self documenting.
+
+Validate invariants at construction boundaries. Use private constructors paired with factory functions when initialization can fail. This ensures callers can only hold valid instances.
 
 ## Prevent argument transposition traps
 
 Never place adjacent parameters sharing the same primitive or fundamental type in a signature.
 
-Passing two `std::string_view` arguments side by side invites silent transposition bugs. The compiler accepts swapped arguments without warnings, causing silent runtime defects.
+Signatures taking multiple primitives of the same type invite silent transposition bugs. The compiler accepts transposed arguments without warnings, producing defects that escape static inspection.
 
-## Use strong types when multiple inputs are necessary
+When a function requires multiple inputs sharing the same underlying representation, strong types are mandatory.
 
-When a function genuinely requires multiple parameters sharing the same representation, introduce distinct strong types.
+## Resource safety through RAII
 
-Wrap fundamental types in dedicated structs or scoped enums. Strong types turn argument transposition into compile time errors.
+Never require the caller to remember cleanup steps, release locks, or free memory manually.
 
-## Prevent copy and paste misattribution
+Resource acquisition must be tied to object lifetime. Functions that allocate resources must return RAII guards, smart pointers, or managed objects. Destructors must release resources deterministically.
 
-Do not design interfaces that rely on human discipline to keep strings synchronized with physical architecture.
+Component boundaries must never return raw owning pointers.
 
-Requiring callers to pass component names as free text strings causes silent misattribution when code is copied across files. Interfaces must enforce physical invariants mechanically.
+## Consistency and least astonishment
 
-## Prefer standard vocabulary types for single inputs
+Interfaces must behave consistently across components.
 
-When a function accepts a single string or slice, use standard `std::string_view`.
+Follow standard C++ and standard library conventions for common operations. Maintain uniform parameter ordering across related functions within a subsystem.
 
-Do not wrap single inputs in artificial concepts like `std::convertible_to<std::string_view>` or redundant strong types. Single arguments cannot be transposed. Plain vocabulary types provide zero allocation efficiency without template bloat.
+Do not introduce surprising side effects in functions that appear to be queries. A getter must not alter observable state or perform unexpected heavy I/O operations.
 
-## Preserve physical design boundaries
+## Explicit constructors and conversions
 
-Keep public headers lightweight and macro free.
+Mark single argument constructors and conversion operators explicit by default.
 
-Complex path deduction and error handling belong inside private implementation files. Public component headers must remain clean compilation firewalls following John Lakos physical design.
+Implicit conversions allow the compiler to silently construct objects or convert unrelated types to satisfy a call. This hides bugs and subverts type safety.
+
+Only omit explicit when designing intentional conversions for genuine mathematical or vocabulary types.
+
+## Eliminate redundant caller burden
+
+Do not ask the caller for information that the component, build system, or runtime environment can deduce safely.
+
+If a component can determine ambient architectural context or deduce invariants internally, it must do so. Forcing callers to repeatedly provide boilerplate strings or redundant configuration creates opportunities for errors.
+
+## Compile time enforcement over runtime checks
+
+Push verification to the compiler whenever possible.
+
+Prefer `static_assert`, concepts, and strong types over runtime assertions and error codes. A compile time failure stops the bug before the binary is built.
+
+## Physical design simplicity
+
+Keep public headers lightweight, clean, and macro free.
+
+Complex deduction logic and heavy implementation details belong in private `.cpp` files. Public component headers must remain clean compilation firewalls following John Lakos physical design.
