@@ -1,0 +1,69 @@
+# .clang-format - Formatting standards for template2026 project
+# Based on LLVM base style with custom parameters mapping the project style guide.
+
+BasedOnStyle: LLVM
+
+# Language standards and compatibility
+Language: Cpp
+Standard: Latest
+
+# Code alignment and spacing
+ColumnLimit: 120
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+# Brace breaking style (Egyptian / K&R style)
+BreakBeforeBraces: Attach
+
+# Access modifier formatting (public, private, protected alignment)
+AccessModifierOffset: -4
+
+# Function and block single-line allowances
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: Never
+
+# Include statement sorting and management
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+
+# Whitespace handling
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: None
+AlignConsecutiveDeclarations: None
+AlignEscapedNewlines: Right
+AlignOperands: Align
+AlignTrailingComments: true
+AllowAllParametersOfDeclarationOnNextLine: false
+BinPackArguments: false
+BinPackParameters: false
+
+# Spaces inside elements
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: true
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeParens: ControlStatements
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceInEmptyBlock: false
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: Leave
+SpacesInContainerLiterals: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+# Pointer and reference alignments (standard East-style)
+PointerAlignment: Right
+
+# Modern C++ specific layout formatting
+FixNamespaceComments: true
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1

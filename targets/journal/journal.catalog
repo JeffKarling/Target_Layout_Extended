@@ -1,0 +1,12 @@
+# systemd journald message catalog for component: journal
+
+-- 7a1d4f90e3c84a21b5809e41d2a7c001
+Subject: Unhandled exception intercepted at component boundary
+Defined-By: target_layout_extended::journal
+Support: https://github.com/JeffKarling/Target_Layout_Extended
+
+An exception reached a noexcept component boundary and was intercepted by the
+centralized Lippincott handler before it could propagate across CMake targets.
+
+ Inspect the structured CODE_FILE, CODE_LINE, CODE_FUNC, and COMPONENT fields
+in journalctl to identify the exact component boundary and exception message.

@@ -1,0 +1,9 @@
+# systemd journald message catalog for component: tbb_algos
+
+-- 6d3f8912a0c54e37b9241f08c3e2a201
+Subject: Parallel TBB workload failed at component boundary
+Defined-By: target_layout_extended::tbb_algos
+Support: https://github.com/JeffKarling/Target_Layout_Extended
+
+A parallel algorithm in tbb_algos rejected invalid input parameters or threw an
+exception inside the oneTBB execution arena.

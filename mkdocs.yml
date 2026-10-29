@@ -1,0 +1,16 @@
+site_name: Target Layout Extended
+site_url: https://jeffkarling.github.io/Target_Layout_Extended/
+site_dir: site
+docs_dir: Documentation
+repo_url: https://github.com/JeffKarling/Target_Layout_Extended
+
+theme:
+  name: material
+
+nav:
+  - Padded Component Anatomy: index.md
+  - Component Boundaries and Catalogs: component_boundaries.md
+  - Benchmarking and Score Optimization: benchmarking_and_profiling.md
+  - Presets and Multi Compiler Workflow: presets_and_compilers.md
+  - Static Analysis and Deep Debug: static_analysis_and_debug.md
+  - Runtime Sanitizers: sanitizer_guide.md

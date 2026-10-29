@@ -1,0 +1,520 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "hidden": true,
+      "name": "common",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/Build/${presetName}",
+      "installDir": "${sourceDir}/Build/${presetName}/Install"
+    },
+    {
+      "hidden": true,
+      "name": "Clang",
+      "inherits": "common",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang++"
+      },
+      "vendor": {
+        "jetbrains.com/clion": {
+          "toolchain": "Clang"
+        }
+      }
+    },
+    {
+      "hidden": true,
+      "name": "GNU",
+      "inherits": "common",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "g++"
+      },
+      "vendor": {
+        "jetbrains.com/clion": {
+          "toolchain": "GNU"
+        }
+      }
+    },
+    {
+      "inherits": "Clang",
+      "name": "Clang_Default_Debug",
+      "displayName": "Clang Default Debug",
+      "description": "Portable debug build using Clang and Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "inherits": "Clang",
+      "name": "Clang_Default_Release",
+      "displayName": "Clang Default Release",
+      "description": "Portable release build using Clang and Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "inherits": "Clang",
+      "name": "Clang_Default_RelWithDebInfo",
+      "displayName": "Clang Default RelWithDebInfo",
+      "description": "Portable RelWithDebInfo build using Clang and Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "inherits": "Clang",
+      "name": "Clang_Custom_Debug",
+      "displayName": "Clang Custom Debug",
+      "description": "Hardware tuned debug build with DWARF-5 and strict warnings",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Clang_Debug"
+      }
+    },
+    {
+      "inherits": "Clang",
+      "name": "Clang_Custom_Debug_Deep",
+      "displayName": "Clang Custom Debug Deep",
+      "description": "Deep custom debug build with extensive standard library hardening",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Clang_Debug_Deep"
+      }
+    },
+    {
+      "inherits": "Clang",
+      "name": "Clang_Custom_Release",
+      "displayName": "Clang Custom Release",
+      "description": "Hardware tuned release build with native SIMD and LTO",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Clang_Release"
+      }
+    },
+    {
+      "inherits": "Clang",
+      "name": "Clang_Custom_RelWithDebInfo",
+      "displayName": "Clang Custom RelWithDebInfo",
+      "description": "Hardware tuned profiling build with DWARF-5 and frame pointers",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Clang_RelWithDebInfo"
+      }
+    },
+    {
+      "inherits": "Clang",
+      "name": "Clang_Tidy",
+      "displayName": "Clang Tidy",
+      "description": "Static analysis pass using clang-tidy",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Clang_Tidy"
+      }
+    },
+    {
+      "inherits": "Clang",
+      "name": "Clang_UBSan",
+      "displayName": "Clang UBSan",
+      "description": "Clang UndefinedBehaviorSanitizer",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Clang_UBSan"
+      }
+    },
+    {
+      "inherits": "Clang",
+      "name": "Clang_MSan",
+      "displayName": "Clang MSan",
+      "description": "Clang MemorySanitizer",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Clang_MSan"
+      }
+    },
+    {
+      "inherits": "Clang",
+      "name": "Clang_TSan",
+      "displayName": "Clang TSan",
+      "description": "Clang ThreadSanitizer",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Clang_TSan"
+      }
+    },
+    {
+      "inherits": "Clang",
+      "name": "Clang_ASan",
+      "displayName": "Clang ASan",
+      "description": "Clang AddressSanitizer",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Clang_ASan"
+      }
+    },
+    {
+      "inherits": "Clang",
+      "name": "Clang_LSan",
+      "displayName": "Clang LSan",
+      "description": "Clang LeakSanitizer",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Clang_LSan"
+      }
+    },
+    {
+      "inherits": "GNU",
+      "name": "GNU_Default_Debug",
+      "displayName": "GNU Default Debug",
+      "description": "Portable debug build using GCC and Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "inherits": "GNU",
+      "name": "GNU_Default_Release",
+      "displayName": "GNU Default Release",
+      "description": "Portable release build using GCC and Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "inherits": "GNU",
+      "name": "GNU_Default_RelWithDebInfo",
+      "displayName": "GNU Default RelWithDebInfo",
+      "description": "Portable RelWithDebInfo build using GCC and Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+      }
+    },
+    {
+      "inherits": "GNU",
+      "name": "GNU_Custom_Debug",
+      "displayName": "GNU Custom Debug",
+      "description": "Hardware tuned debug build with DWARF-5 and strict warnings",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "GNU_Debug"
+      }
+    },
+    {
+      "inherits": "GNU",
+      "name": "GNU_Custom_Debug_Deep",
+      "displayName": "GNU Custom Debug Deep",
+      "description": "Deep custom debug build with GLIBCXX safe iterator checks",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "GNU_Debug_Deep"
+      }
+    },
+    {
+      "inherits": "GNU",
+      "name": "GNU_Custom_Release",
+      "displayName": "GNU Custom Release",
+      "description": "Hardware tuned release build with native SIMD and LTO",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "GNU_Release"
+      }
+    },
+    {
+      "inherits": "GNU",
+      "name": "GNU_Custom_RelWithDebInfo",
+      "displayName": "GNU Custom RelWithDebInfo",
+      "description": "Hardware tuned profiling build with frame pointers",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "GNU_RelWithDebInfo"
+      }
+    },
+    {
+      "inherits": "GNU",
+      "name": "GNU_UBSan",
+      "displayName": "GNU UBSan",
+      "description": "GCC UndefinedBehaviorSanitizer",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "GNU_UBSan"
+      }
+    },
+    {
+      "inherits": "GNU",
+      "name": "GNU_ASan",
+      "displayName": "GNU ASan",
+      "description": "GCC AddressSanitizer",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "GNU_ASan"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "Clang_Default_Debug", "displayName": "Clang Default Debug", "configurePreset": "Clang_Default_Debug" },
+    { "name": "Clang_Default_Release", "displayName": "Clang Default Release", "configurePreset": "Clang_Default_Release" },
+    { "name": "Clang_Default_RelWithDebInfo", "displayName": "Clang Default RelWithDebInfo", "configurePreset": "Clang_Default_RelWithDebInfo" },
+    { "name": "Clang_Custom_Debug", "displayName": "Clang Custom Debug", "configurePreset": "Clang_Custom_Debug" },
+    { "name": "Clang_Custom_Debug_Deep", "displayName": "Clang Custom Debug Deep", "configurePreset": "Clang_Custom_Debug_Deep" },
+    { "name": "Clang_Custom_Release", "displayName": "Clang Custom Release", "configurePreset": "Clang_Custom_Release" },
+    { "name": "Clang_Custom_RelWithDebInfo", "displayName": "Clang Custom RelWithDebInfo", "configurePreset": "Clang_Custom_RelWithDebInfo" },
+    { "name": "Clang_Tidy", "displayName": "Clang Tidy", "configurePreset": "Clang_Tidy" },
+    { "name": "Clang_UBSan", "displayName": "Clang UBSan", "configurePreset": "Clang_UBSan" },
+    { "name": "Clang_MSan", "displayName": "Clang MSan", "configurePreset": "Clang_MSan" },
+    { "name": "Clang_TSan", "displayName": "Clang TSan", "configurePreset": "Clang_TSan" },
+    { "name": "Clang_ASan", "displayName": "Clang ASan", "configurePreset": "Clang_ASan" },
+    { "name": "Clang_LSan", "displayName": "Clang LSan", "configurePreset": "Clang_LSan" },
+    { "name": "GNU_Default_Debug", "displayName": "GNU Default Debug", "configurePreset": "GNU_Default_Debug" },
+    { "name": "GNU_Default_Release", "displayName": "GNU Default Release", "configurePreset": "GNU_Default_Release" },
+    { "name": "GNU_Default_RelWithDebInfo", "displayName": "GNU Default RelWithDebInfo", "configurePreset": "GNU_Default_RelWithDebInfo" },
+    { "name": "GNU_Custom_Debug", "displayName": "GNU Custom Debug", "configurePreset": "GNU_Custom_Debug" },
+    { "name": "GNU_Custom_Debug_Deep", "displayName": "GNU Custom Debug Deep", "configurePreset": "GNU_Custom_Debug_Deep" },
+    { "name": "GNU_Custom_Release", "displayName": "GNU Custom Release", "configurePreset": "GNU_Custom_Release" },
+    { "name": "GNU_Custom_RelWithDebInfo", "displayName": "GNU Custom RelWithDebInfo", "configurePreset": "GNU_Custom_RelWithDebInfo" },
+    { "name": "GNU_UBSan", "displayName": "GNU UBSan", "configurePreset": "GNU_UBSan" },
+    { "name": "GNU_ASan", "displayName": "GNU ASan", "configurePreset": "GNU_ASan" }
+  ],
+  "testPresets": [
+    {
+      "name": "GNU_Default_Debug_Test",
+      "displayName": "GNU Default Debug Test Suite",
+      "configurePreset": "GNU_Default_Debug",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 8 }
+    },
+    {
+      "name": "GNU_Default_Release_Test",
+      "displayName": "GNU Default Release Test Suite",
+      "configurePreset": "GNU_Default_Release",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 8 }
+    },
+    {
+      "name": "GNU_Custom_Debug_Test",
+      "displayName": "GNU Custom Debug Test Suite",
+      "configurePreset": "GNU_Custom_Debug",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 8 }
+    },
+    {
+      "name": "GNU_Custom_Debug_Deep_Test",
+      "displayName": "GNU Custom Debug Deep Test Suite",
+      "configurePreset": "GNU_Custom_Debug_Deep",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 8 }
+    },
+    {
+      "name": "GNU_Custom_Release_Test",
+      "displayName": "GNU Custom Release Test Suite",
+      "configurePreset": "GNU_Custom_Release",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 8 }
+    },
+    {
+      "name": "GNU_UBSan_Test",
+      "displayName": "GNU UBSan Test Suite",
+      "configurePreset": "GNU_UBSan",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 8 }
+    },
+    {
+      "name": "GNU_ASan_Test",
+      "displayName": "GNU ASan Test Suite",
+      "configurePreset": "GNU_ASan",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 8 }
+    },
+    {
+      "name": "Clang_Default_Debug_Test",
+      "displayName": "Clang Default Debug Test Suite",
+      "configurePreset": "Clang_Default_Debug",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 8 }
+    },
+    {
+      "name": "Clang_Default_Release_Test",
+      "displayName": "Clang Default Release Test Suite",
+      "configurePreset": "Clang_Default_Release",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 8 }
+    },
+    {
+      "name": "Clang_Custom_Debug_Test",
+      "displayName": "Clang Custom Debug Test Suite",
+      "configurePreset": "Clang_Custom_Debug",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 8 }
+    },
+    {
+      "name": "Clang_Custom_Debug_Deep_Test",
+      "displayName": "Clang Custom Debug Deep Test Suite",
+      "configurePreset": "Clang_Custom_Debug_Deep",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 8 }
+    },
+    {
+      "name": "Clang_Custom_Release_Test",
+      "displayName": "Clang Custom Release Test Suite",
+      "configurePreset": "Clang_Custom_Release",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 8 }
+    },
+    {
+      "name": "Clang_UBSan_Test",
+      "displayName": "Clang UBSan Test Suite",
+      "configurePreset": "Clang_UBSan",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 8 }
+    },
+    {
+      "name": "Clang_TSan_Test",
+      "displayName": "Clang TSan Test Suite",
+      "configurePreset": "Clang_TSan",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 8 }
+    },
+    {
+      "name": "Clang_ASan_Test",
+      "displayName": "Clang ASan Test Suite",
+      "configurePreset": "Clang_ASan",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 8 }
+    },
+    {
+      "name": "Clang_LSan_Test",
+      "displayName": "Clang LSan Test Suite",
+      "configurePreset": "Clang_LSan",
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 8 }
+    }
+  ],
+  "workflowPresets": [
+    {
+      "name": "GNU_Default_Debug_Verify",
+      "displayName": "GNU Default Debug Verification",
+      "steps": [
+        { "type": "configure", "name": "GNU_Default_Debug" },
+        { "type": "build", "name": "GNU_Default_Debug" },
+        { "type": "test", "name": "GNU_Default_Debug_Test" }
+      ]
+    },
+    {
+      "name": "GNU_Default_Release_Verify",
+      "displayName": "GNU Default Release Verification",
+      "steps": [
+        { "type": "configure", "name": "GNU_Default_Release" },
+        { "type": "build", "name": "GNU_Default_Release" },
+        { "type": "test", "name": "GNU_Default_Release_Test" }
+      ]
+    },
+    {
+      "name": "GNU_Custom_Debug_Verify",
+      "displayName": "GNU Custom Debug Verification",
+      "steps": [
+        { "type": "configure", "name": "GNU_Custom_Debug" },
+        { "type": "build", "name": "GNU_Custom_Debug" },
+        { "type": "test", "name": "GNU_Custom_Debug_Test" }
+      ]
+    },
+    {
+      "name": "GNU_Custom_Debug_Deep_Verify",
+      "displayName": "GNU Custom Debug Deep Verification",
+      "steps": [
+        { "type": "configure", "name": "GNU_Custom_Debug_Deep" },
+        { "type": "build", "name": "GNU_Custom_Debug_Deep" },
+        { "type": "test", "name": "GNU_Custom_Debug_Deep_Test" }
+      ]
+    },
+    {
+      "name": "GNU_Custom_Release_Verify",
+      "displayName": "GNU Custom Release Verification",
+      "steps": [
+        { "type": "configure", "name": "GNU_Custom_Release" },
+        { "type": "build", "name": "GNU_Custom_Release" },
+        { "type": "test", "name": "GNU_Custom_Release_Test" }
+      ]
+    },
+    {
+      "name": "GNU_UBSan_Verify",
+      "displayName": "GNU UBSan Verification",
+      "steps": [
+        { "type": "configure", "name": "GNU_UBSan" },
+        { "type": "build", "name": "GNU_UBSan" },
+        { "type": "test", "name": "GNU_UBSan_Test" }
+      ]
+    },
+    {
+      "name": "GNU_ASan_Verify",
+      "displayName": "GNU ASan Verification",
+      "steps": [
+        { "type": "configure", "name": "GNU_ASan" },
+        { "type": "build", "name": "GNU_ASan" },
+        { "type": "test", "name": "GNU_ASan_Test" }
+      ]
+    },
+    {
+      "name": "Clang_Default_Debug_Verify",
+      "displayName": "Clang Default Debug Verification",
+      "steps": [
+        { "type": "configure", "name": "Clang_Default_Debug" },
+        { "type": "build", "name": "Clang_Default_Debug" },
+        { "type": "test", "name": "Clang_Default_Debug_Test" }
+      ]
+    },
+    {
+      "name": "Clang_Default_Release_Verify",
+      "displayName": "Clang Default Release Verification",
+      "steps": [
+        { "type": "configure", "name": "Clang_Default_Release" },
+        { "type": "build", "name": "Clang_Default_Release" },
+        { "type": "test", "name": "Clang_Default_Release_Test" }
+      ]
+    },
+    {
+      "name": "Clang_Custom_Debug_Verify",
+      "displayName": "Clang Custom Debug Verification",
+      "steps": [
+        { "type": "configure", "name": "Clang_Custom_Debug" },
+        { "type": "build", "name": "Clang_Custom_Debug" },
+        { "type": "test", "name": "Clang_Custom_Debug_Test" }
+      ]
+    },
+    {
+      "name": "Clang_Custom_Debug_Deep_Verify",
+      "displayName": "Clang Custom Debug Deep Verification",
+      "steps": [
+        { "type": "configure", "name": "Clang_Custom_Debug_Deep" },
+        { "type": "build", "name": "Clang_Custom_Debug_Deep" },
+        { "type": "test", "name": "Clang_Custom_Debug_Deep_Test" }
+      ]
+    },
+    {
+      "name": "Clang_Custom_Release_Verify",
+      "displayName": "Clang Custom Release Verification",
+      "steps": [
+        { "type": "configure", "name": "Clang_Custom_Release" },
+        { "type": "build", "name": "Clang_Custom_Release" },
+        { "type": "test", "name": "Clang_Custom_Release_Test" }
+      ]
+    },
+    {
+      "name": "Clang_UBSan_Verify",
+      "displayName": "Clang UBSan Verification",
+      "steps": [
+        { "type": "configure", "name": "Clang_UBSan" },
+        { "type": "build", "name": "Clang_UBSan" },
+        { "type": "test", "name": "Clang_UBSan_Test" }
+      ]
+    },
+    {
+      "name": "Clang_TSan_Verify",
+      "displayName": "Clang TSan Verification",
+      "steps": [
+        { "type": "configure", "name": "Clang_TSan" },
+        { "type": "build", "name": "Clang_TSan" },
+        { "type": "test", "name": "Clang_TSan_Test" }
+      ]
+    },
+    {
+      "name": "Clang_ASan_Verify",
+      "displayName": "Clang ASan Verification",
+      "steps": [
+        { "type": "configure", "name": "Clang_ASan" },
+        { "type": "build", "name": "Clang_ASan" },
+        { "type": "test", "name": "Clang_ASan_Test" }
+      ]
+    },
+    {
+      "name": "Clang_LSan_Verify",
+      "displayName": "Clang LSan Verification",
+      "steps": [
+        { "type": "configure", "name": "Clang_LSan" },
+        { "type": "build", "name": "Clang_LSan" },
+        { "type": "test", "name": "Clang_LSan_Test" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+# systemd journald message catalog for component: perf_scope
+
+-- 9b2e5a11c4d74f08a6123e89f1b4d002
+Subject: Failed to read or write component benchmark baseline file
+Defined-By: target_layout_extended::perf_scope
+Support: https://github.com/JeffKarling/Target_Layout_Extended
+
+The perf_scope component could not read or write the baseline.json file in the
+component's <name>BENCH directory. Verify file permissions and path validity.
+
+-- 9b2e5a11c4d74f08a6123e89f1b4d003
+Subject: Exception thrown during component benchmark measurement
+Defined-By: target_layout_extended::perf_scope
+Support: https://github.com/JeffKarling/Target_Layout_Extended
+
+An unexpected exception occurred while executing a benchmark workload inside
+perf_scope::measure_workload and was caught by the Lippincott boundary handler.

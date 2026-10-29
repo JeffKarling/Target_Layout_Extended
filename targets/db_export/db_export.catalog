@@ -1,0 +1,9 @@
+# systemd journald message catalog for component: db_export
+
+-- 8e4c9201b7a34d568f120c93e5d7b301
+Subject: Failed to export database snapshot at component boundary
+Defined-By: target_layout_extended::db_export
+Support: https://github.com/JeffKarling/Target_Layout_Extended
+
+The db_export::format_database_snapshot boundary call could not open or parse
+the binary Protobuf database file at the requested path.

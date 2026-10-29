@@ -1,0 +1,13 @@
+[
+  # Map all Intel oneTBB internal details back to the public parallel_reduce header
+  { include: ["@<oneapi/tbb/detail/.*>", "private", "<oneapi/tbb/parallel_reduce.h>", "public"] },
+  { include: ["@<oneapi/tbb/internal/.*>", "private", "<oneapi/tbb/parallel_reduce.h>", "public"] },
+
+  # Map all Parallel STL internal implementation files back to the public standard headers
+  { include: ["@<pstl/.*_impl\\.h>", "private", "<execution>", "public"] },
+  { include: ["@<pstl/glue_.*>", "private", "<execution>", "public"] },
+
+  # Protect your standard library format and ranges aliases
+  { include: ["<bits/utility.h>", "private", "<utility>", "public"] },
+  { include: ["<bits/ranges_base.h>", "private", "<ranges>", "public"] }
+]
