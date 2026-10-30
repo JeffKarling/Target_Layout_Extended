@@ -11,7 +11,7 @@ Use this runbook to design, scaffold, implement, and verify a new component.
 
 ## Step 0. Architectural decision tree
 
-Before drafting code or scaffolding files, walk through the five foundational decisions required by Target Layout Extended:
+Before drafting code or scaffolding files, walk through the six foundational decisions required by Target Layout Extended:
 
 1. **Component granularity.**
 Determine whether the capability belongs inside an existing component or warrants a new component under the physical one name rule. If the responsibility spans both runtime processing and serialization or storage, decide whether to split it into two distinct components.
@@ -27,6 +27,12 @@ Identify unique failure modes that can occur at the boundary. Plan the descripti
 
 5. **Verification duo scope.**
 Determine happy paths, boundary edge cases, and invalid inputs for `targets/<name>/<name>TEST/`. Determine the hot algorithmic workload and initial birth metric targets for `targets/<name>/<name>BENCH/`.
+
+6. **Component isolation opportunities.**
+Review `.agents/rules/component_segmentation_opportunities.md`. Determine whether the component benefits from isolated configuration advantages:
+* Can the internal implementation use newer language standard features privately without impacting consumers?
+* Does this component contain hot numerical routines that warrant local SIMD extensions or fast math flags?
+* Does this component wrap generated code or external dependencies requiring isolated warning filters?
 
 ## Step 1. Draft the public interface
 
