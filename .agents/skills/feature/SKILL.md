@@ -22,8 +22,8 @@ Map where the component sits in the acyclic dependency graph. Identify which com
 3. **Public boundary contract.**
 Design the interface in `targets/<name>/<name>/<name>.hpp`. Follow Scott Meyers rules from `.agents/rules/meyers_interface_design.md` and ranges guidelines from `.agents/rules/ranges_and_views.md`. Determine if the component is an operational boundary requiring `noexcept` status returns.
 
-4. **Catalog error taxonomy.**
-Identify unique failure modes that can occur at the boundary following `.agents/rules/fine_grained_boundary_exceptions.md`. A component needs at minimum one catch all exception rethrow. When a component exposes multiple distinct operations, relying on a single generic rethrow is a code smell. Map each distinct operational boundary to its own fine grained exception rethrow and catalog entry.
+4. **Catalog error taxonomy and logging.**
+Plan component catalog entries following `.agents/rules/boundary_exceptions_and_catalog_logging.md`. Rethrowing more than one exception across a component boundary is a code smell. A focused component handles its own logic, maintaining a single boundary catch all firewall paired with an error catalog entry. Conversely, defining multiple public catalog log entries across all severity levels is good design, providing rich operational telemetry without affecting control flow.
 
 5. **Verification duo scope.**
 Determine happy paths, boundary edge cases, and invalid inputs for `targets/<name>/<name>TEST/`. Determine the hot algorithmic workload and initial birth metric targets for `targets/<name>/<name>BENCH/`.
@@ -100,44 +100,44 @@ endif()
 
 ## Step 3. Define catalog entries
 
-Document boundary exceptions in `targets/<name>/<name>.catalog`.
+Document operational events and boundary errors in `targets/<name>/<name>.catalog`.
 
-A component needs at minimum one catch all exception rethrow. When a component exposes several distinct public operations, using only one rethrow is a code smell. Follow `.agents/rules/fine_grained_boundary_exceptions.md` to design fine grained rethrowing sites tailored to what the component actually does.
+Rethrowing more than one exception across a boundary is a code smell. However, adding multiple public catalog log entries across different severity levels represents good design. Catalog logs are purely informative and do not steer application logic.
 
-Map each distinct operational boundary to its own catalog entry:
+Follow `.agents/rules/boundary_exceptions_and_catalog_logging.md` to define informative events alongside the boundary failure entry:
 
 ```text
 -- 51a3b901c2d44f6e87a213098df24101
 @ COMPONENT=<name>
-@ SUMMARY=Component initialization or configuration failed
+@ SUMMARY=Component initialization completed successfully
 
 -- 51a3b901c2d44f6e87a213098df24102
 @ COMPONENT=<name>
-@ SUMMARY=Processing or transformation workload failed
+@ SUMMARY=Workload throughput fell below optimal threshold
 
 -- 51a3b901c2d44f6e87a213098df24103
 @ COMPONENT=<name>
-@ SUMMARY=Storage serialization or write operation failed
+@ SUMMARY=Unhandled fault caught at component boundary firewall
 ```
 
 Declare corresponding constants in `targets/<name>/<name>/<name>.hpp`:
 
 ```cpp
 namespace target_layout_extended::<name>::catalog {
-    inline constexpr journal::catalog_entry k_init_failed{
+    inline constexpr journal::catalog_entry k_initialized{
         .message_id = "51a3b901c2d44f6e87a213098df24101",
         .component = "<name>",
-        .summary = "Component initialization or configuration failed"
+        .summary = "Component initialization completed successfully"
     };
-    inline constexpr journal::catalog_entry k_process_failed{
+    inline constexpr journal::catalog_entry k_throughput_warning{
         .message_id = "51a3b901c2d44f6e87a213098df24102",
         .component = "<name>",
-        .summary = "Processing or transformation workload failed"
+        .summary = "Workload throughput fell below optimal threshold"
     };
-    inline constexpr journal::catalog_entry k_save_failed{
+    inline constexpr journal::catalog_entry k_boundary_fault{
         .message_id = "51a3b901c2d44f6e87a213098df24103",
         .component = "<name>",
-        .summary = "Storage serialization or write operation failed"
+        .summary = "Unhandled fault caught at component boundary firewall"
     };
 } // namespace target_layout_extended::<name>::catalog
 ```
@@ -150,23 +150,24 @@ Add unit tests covering:
 * Boundary conditions and edge cases.
 * Invalid inputs caught safely without leaking exceptions.
 
-## Step 5. Implement logic and catch boundary exceptions
+## Step 5. Implement logic, logging, and boundary exception firewall
 
 Implement the member functions in `targets/<name>/<name>.cpp`.
-Enclose each distinct boundary entry point in a `try` block. Delegate failures to `journal::catch_boundary_exception()` passing the operation specific catalog entry:
+Emit informative catalog logs during normal execution. Enclose the public boundary in a single `try` block, delegating any unhandled fault to `journal::catch_boundary_exception()`:
 
 ```cpp
 auto <name>::process(std::span<const std::byte> payload) noexcept -> bool {
     try {
-        // Implementation specific logic
+        // Implementation logic
+        journal::log_info(catalog::k_initialized, "Processing started");
         return true;
     } catch (...) {
-        return journal::catch_boundary_exception(catalog::k_process_failed);
+        return journal::catch_boundary_exception(catalog::k_boundary_fault);
     }
 }
 ```
 
-Never collapse multiple distinct public methods under a single blanket error ID.
+Never expose multiple exception pathways to callers. Use value based status returns for domain outcomes.
 
 ## Step 6. Verify under debug
 
