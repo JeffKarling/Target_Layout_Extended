@@ -6,7 +6,6 @@
 #include <ranges>
 #include <sstream>
 #include <string>
-#include <item_proto/item_proto.pb.h>
 #include <journal/journal.hpp>
 
 namespace target_layout_extended::db_export {
