@@ -9,6 +9,25 @@ description: >-
 
 Use this runbook to design, scaffold, implement, and verify a new component.
 
+## Step 0. Architectural decision tree
+
+Before drafting code or scaffolding files, walk through the five foundational decisions required by Target Layout Extended:
+
+1. **Component granularity.**
+Determine whether the capability belongs inside an existing component or warrants a new component under the physical one name rule. If the responsibility spans both runtime processing and serialization or storage, decide whether to split it into two distinct components.
+
+2. **Dependency graph positioning.**
+Map where the component sits in the acyclic dependency graph. Identify which components it links. Ensure all dependencies link `PRIVATE` unless public headers directly expose types from those dependencies. Check whether an existing dependency suffices or if a new third party library is required.
+
+3. **Public boundary contract.**
+Design the interface in `targets/<name>/<name>/<name>.hpp`. Follow Scott Meyers rules from `.agent/rules/meyers_interface_design.md` and ranges guidelines from `.agent/rules/ranges_and_views.md`. Determine if the component is an operational boundary requiring `noexcept` status returns.
+
+4. **Catalog error taxonomy.**
+Identify unique failure modes that can occur at the boundary. Plan the descriptive UUID entries to document in `targets/<name>/<name>.catalog`.
+
+5. **Verification duo scope.**
+Determine happy paths, boundary edge cases, and invalid inputs for `targets/<name>/<name>TEST/`. Determine the hot algorithmic workload and initial birth metric targets for `targets/<name>/<name>BENCH/`.
+
 ## Step 1. Draft the public interface
 
 Design the component header in `targets/<name>/<name>/<name>.hpp`.
