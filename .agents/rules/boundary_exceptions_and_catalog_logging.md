@@ -22,6 +22,14 @@ Catalog logs are purely informative. They never alter application control flow o
 
 Adding multiple catalog log entries represents good design. Catalog entries can span all standard severity levels from debug to critical, providing structured observability for systemd journald.
 
+## Catalogs as public interface documentation
+
+Message catalogs serve as the public interface documentation for every physical component.
+
+By reading public catalog definitions, the reader should understand the component's high level features and capabilities without reading the actual code. The more catalog entries used across the component, the better the reader understands what the component is doing.
+
+Catalogs form an index of capabilities, state transitions, and diagnostic checkpoints. While exception throwing must remain strictly minimal, catalog definitions should be expansive across all standard severity classifications.
+
 ## Rich catalog entries across severity levels
 
 A cohesive component can define multiple catalog entries across standard severity classifications.

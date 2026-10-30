@@ -23,7 +23,7 @@ Map where the component sits in the acyclic dependency graph. Identify which com
 Design the interface in `targets/<name>/<name>/<name>.hpp`. Follow Scott Meyers rules from `.agents/rules/meyers_interface_design.md` and ranges guidelines from `.agents/rules/ranges_and_views.md`. Determine if the component is an operational boundary requiring `noexcept` status returns.
 
 4. **Catalog error taxonomy and logging.**
-Plan component catalog entries following `.agents/rules/boundary_exceptions_and_catalog_logging.md`. Rethrowing more than one exception across a component boundary is a code smell. A focused component handles its own logic, maintaining a single boundary catch all firewall paired with an error catalog entry. Conversely, defining multiple public catalog log entries across all severity levels is good design, providing rich operational telemetry without affecting control flow.
+Plan component catalog entries following `.agents/rules/boundary_exceptions_and_catalog_logging.md`. Catalogs serve as the public interface documentation. Readers should understand high level component capabilities from catalog entries alone without reading the implementation. Rethrowing more than one exception across a component boundary is a code smell. A focused component maintains a single boundary catch all firewall paired with an error catalog entry, while defining generous public catalog log entries across all severity levels.
 
 5. **Verification duo scope.**
 Determine happy paths, boundary edge cases, and invalid inputs for `targets/<name>/<name>TEST/`. Determine the hot algorithmic workload and initial birth metric targets for `targets/<name>/<name>BENCH/`.
@@ -101,6 +101,8 @@ endif()
 ## Step 3. Define catalog entries
 
 Document operational events and boundary errors in `targets/<name>/<name>.catalog`.
+
+Catalogs serve as the public interface documentation. By reading public catalog definitions, the reader should understand the component's high level features and capabilities without reading the actual code. The more catalog entries that are used to define distinct operations and checkpoints, the better the reader understands what the component does.
 
 Rethrowing more than one exception across a boundary is a code smell. However, adding multiple public catalog log entries across different severity levels represents good design. Catalog logs are purely informative and do not steer application logic.
 
