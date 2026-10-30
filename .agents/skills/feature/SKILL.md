@@ -23,7 +23,7 @@ Map where the component sits in the acyclic dependency graph. Identify which com
 Design the interface in `targets/<name>/<name>/<name>.hpp`. Follow Scott Meyers rules from `.agents/rules/meyers_interface_design.md` and ranges guidelines from `.agents/rules/ranges_and_views.md`. Determine if the component is an operational boundary requiring `noexcept` status returns.
 
 4. **Catalog error taxonomy.**
-Identify unique failure modes that can occur at the boundary. Plan the descriptive UUID entries to document in `targets/<name>/<name>.catalog`.
+Identify unique failure modes that can occur at the boundary following `.agents/rules/fine_grained_boundary_exceptions.md`. A component needs at minimum one catch all exception rethrow. When a component exposes multiple distinct operations, relying on a single generic rethrow is a code smell. Map each distinct operational boundary to its own fine grained exception rethrow and catalog entry.
 
 5. **Verification duo scope.**
 Determine happy paths, boundary edge cases, and invalid inputs for `targets/<name>/<name>TEST/`. Determine the hot algorithmic workload and initial birth metric targets for `targets/<name>/<name>BENCH/`.
@@ -100,12 +100,46 @@ endif()
 
 ## Step 3. Define catalog entries
 
-Document boundary exceptions in `targets/<name>/<name>.catalog`:
+Document boundary exceptions in `targets/<name>/<name>.catalog`.
+
+A component needs at minimum one catch all exception rethrow. When a component exposes several distinct public operations, using only one rethrow is a code smell. Follow `.agents/rules/fine_grained_boundary_exceptions.md` to design fine grained rethrowing sites tailored to what the component actually does.
+
+Map each distinct operational boundary to its own catalog entry:
 
 ```text
--- 8e4c9201b7a34d568f120c93e5d7b301
+-- 51a3b901c2d44f6e87a213098df24101
 @ COMPONENT=<name>
-@ SUMMARY=Detailed failure summary caught at boundary
+@ SUMMARY=Component initialization or configuration failed
+
+-- 51a3b901c2d44f6e87a213098df24102
+@ COMPONENT=<name>
+@ SUMMARY=Processing or transformation workload failed
+
+-- 51a3b901c2d44f6e87a213098df24103
+@ COMPONENT=<name>
+@ SUMMARY=Storage serialization or write operation failed
+```
+
+Declare corresponding constants in `targets/<name>/<name>/<name>.hpp`:
+
+```cpp
+namespace target_layout_extended::<name>::catalog {
+    inline constexpr journal::catalog_entry k_init_failed{
+        .message_id = "51a3b901c2d44f6e87a213098df24101",
+        .component = "<name>",
+        .summary = "Component initialization or configuration failed"
+    };
+    inline constexpr journal::catalog_entry k_process_failed{
+        .message_id = "51a3b901c2d44f6e87a213098df24102",
+        .component = "<name>",
+        .summary = "Processing or transformation workload failed"
+    };
+    inline constexpr journal::catalog_entry k_save_failed{
+        .message_id = "51a3b901c2d44f6e87a213098df24103",
+        .component = "<name>",
+        .summary = "Storage serialization or write operation failed"
+    };
+} // namespace target_layout_extended::<name>::catalog
 ```
 
 ## Step 4. Add comprehensive unit tests
@@ -119,7 +153,20 @@ Add unit tests covering:
 ## Step 5. Implement logic and catch boundary exceptions
 
 Implement the member functions in `targets/<name>/<name>.cpp`.
-Enclose boundary entry points in `try` blocks and delegate failures to `journal::catch_boundary_exception()`.
+Enclose each distinct boundary entry point in a `try` block. Delegate failures to `journal::catch_boundary_exception()` passing the operation specific catalog entry:
+
+```cpp
+auto <name>::process(std::span<const std::byte> payload) noexcept -> bool {
+    try {
+        // Implementation specific logic
+        return true;
+    } catch (...) {
+        return journal::catch_boundary_exception(catalog::k_process_failed);
+    }
+}
+```
+
+Never collapse multiple distinct public methods under a single blanket error ID.
 
 ## Step 6. Verify under debug
 
