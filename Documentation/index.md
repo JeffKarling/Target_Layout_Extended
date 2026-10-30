@@ -91,6 +91,13 @@ add_library(${DIR_NAME} STATIC)
 add_library(${PROJECT_NAME}::${DIR_NAME} ALIAS ${DIR_NAME})
 
 include(${CMAKE_BINARY_DIR}/target_properties.cmake)
+include(${CMAKE_BINARY_DIR}/target_compile_options.cmake)
+
+# Relax strict compiler warnings for machine generated Protobuf code while retaining project optimization and hardening defaults
+target_compile_options(${DIR_NAME} PRIVATE
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-global-constructors -Wno-conversion -Wno-sign-conversion>
+        $<$<CXX_COMPILER_ID:GNU>:-Wno-conversion -Wno-sign-conversion>
+)
 
 add_custom_command(
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${DIR_NAME}/${DIR_NAME}.proto
@@ -128,7 +135,7 @@ target_link_libraries(${DIR_NAME} PUBLIC PkgConfig::protobuf)
 
 * **Schema input lives in version control.** The `.proto` file lives at `targets/item_proto/item_proto/item_proto.proto` while generated `.pb.h` and `.pb.cc` files stay inside `${CMAKE_CURRENT_BINARY_DIR}`.
 * **Transparent `FILE_SET` consumption.** By setting `BASE_DIRS ${CMAKE_CURRENT_BINARY_DIR}` on the `PUBLIC FILE_SET`, downstream components like `database_manager` and `db_export` link `${PROJECT_NAME}::item_proto` and write `#include <item_proto/item_proto.pb.h>`.
-* **Isolated warning and analysis policies.** Machine generated C++ code often triggers pedantic compiler or `clang-tidy` warnings. Keeping `item_proto` as its own component and marking `SYSTEM ON` isolates static analysis suppression to the generated code while hand written components stay under strict checks.
+* **Inherited compile options with isolated warning suppressions.** The component includes both shared configuration files. It inherits all global optimization levels, debug formats, standard library hardening defines, and sanitizer instrumentation. Targeted generator expressions suppress only the specific compiler warnings produced by machine generated code, while `SYSTEM ON` silences external header warnings in consumers.
 
 ## Executables follow the same naming rule
 
