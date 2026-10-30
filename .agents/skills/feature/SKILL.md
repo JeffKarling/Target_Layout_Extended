@@ -20,7 +20,7 @@ Determine whether the capability belongs inside an existing component or warrant
 Map where the component sits in the acyclic dependency graph. Identify which components it links. Ensure all dependencies link `PRIVATE` unless public headers directly expose types from those dependencies. Check whether an existing dependency suffices or if a new third party library is required.
 
 3. **Public boundary contract.**
-Design the interface in `targets/<name>/<name>/<name>.hpp`. Follow Scott Meyers rules from `.agent/rules/meyers_interface_design.md` and ranges guidelines from `.agent/rules/ranges_and_views.md`. Determine if the component is an operational boundary requiring `noexcept` status returns.
+Design the interface in `targets/<name>/<name>/<name>.hpp`. Follow Scott Meyers rules from `.agents/rules/meyers_interface_design.md` and ranges guidelines from `.agents/rules/ranges_and_views.md`. Determine if the component is an operational boundary requiring `noexcept` status returns.
 
 4. **Catalog error taxonomy.**
 Identify unique failure modes that can occur at the boundary. Plan the descriptive UUID entries to document in `targets/<name>/<name>.catalog`.
@@ -32,7 +32,7 @@ Determine happy paths, boundary edge cases, and invalid inputs for `targets/<nam
 
 Design the component header in `targets/<name>/<name>/<name>.hpp`.
 
-Follow Scott Meyers principles from `.agent/rules/meyers_interface_design.md`:
+Follow Scott Meyers principles from `.agents/rules/meyers_interface_design.md`:
 * Wrap primitive types in strong types or scoped enums.
 * Make invalid states unrepresentable.
 * Use static factory functions returning `std::optional` or `std::expected` for fallible initialization.
