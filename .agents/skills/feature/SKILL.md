@@ -59,6 +59,7 @@ targets/<name>/
 ```
 
 In `targets/<name>/CMakeLists.txt`, derive target properties using `${DIR_NAME}`.
+Both `target_properties.cmake` and `target_compile_options.cmake` must always be included. If a component requires custom flags or warning suppressions, follow `.agents/rules/override_shared_target_defaults.md` to override defaults locally.
 Link internal dependencies privately:
 
 ```cmake

@@ -4,9 +4,13 @@ add_library(${DIR_NAME} STATIC)
 add_library(${PROJECT_NAME}::${DIR_NAME} ALIAS ${DIR_NAME})
 
 include(${CMAKE_BINARY_DIR}/target_properties.cmake)
+include(${CMAKE_BINARY_DIR}/target_compile_options.cmake)
 
-# Generated Protobuf C++ sources use relaxed warning flags, isolated to this codegen target
-# so hand-written components keep strict warning profiles.
+# Relax strict compiler warnings for machine generated Protobuf code while retaining project optimization and hardening defaults
+target_compile_options(${DIR_NAME} PRIVATE
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-global-constructors -Wno-conversion -Wno-sign-conversion>
+        $<$<CXX_COMPILER_ID:GNU>:-Wno-conversion -Wno-sign-conversion>
+)
 add_custom_command(
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${DIR_NAME}/${DIR_NAME}.proto
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/${DIR_NAME}
