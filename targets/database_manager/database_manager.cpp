@@ -2,9 +2,11 @@
 #include "database_helper.hpp"
 #include <item_proto/item_proto.pb.h>
 #include <journal/journal.hpp>
+#include <algorithm>
 #include <cstddef>
 #include <fstream>
 #include <optional>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -74,11 +76,14 @@ namespace target_layout_extended::database_manager {
             }
             std::scoped_lock const lock(_db_mutex);
 
-            for (int i = 0; i < _database.items_size(); ++i) {
-                if (_database.items(i).id() == item.id()) {
-                    *(_database.mutable_items(i)) = item;
-                    return true;
-                }
+            auto const items_view = std::ranges::subrange(
+                _database.mutable_items()->begin(),
+                _database.mutable_items()->end()
+            );
+            auto const it = std::ranges::find(items_view, item.id(), &Item::id);
+            if (it != items_view.end()) {
+                *it = item;
+                return true;
             }
 
             *(_database.add_items()) = item;

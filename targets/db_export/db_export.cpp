@@ -25,17 +25,7 @@ namespace target_layout_extended::db_export {
                 throw std::runtime_error("failed to parse protobuf database: " + db_path.string());
             }
 
-            std::ostringstream out;
-            out << "Items Database Snapshot (" << database.items_size() << " records)\n";
-            out << "----------------------------------------\n";
-            for (int i = 0; i < database.items_size(); ++i) {
-                auto const& item = database.items(i);
-                out << "  Item ID: " << item.id()
-                    << " | Name: " << item.name()
-                    << " | Value: " << item.value() << "\n";
-            }
-            out << "----------------------------------------\n";
-            return out.str();
+            return format_item_records(database.items());
         } catch (...) {
             (void)journal::catch_boundary_exception(catalog::k_export_failed);
             return std::nullopt;

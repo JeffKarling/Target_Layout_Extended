@@ -118,7 +118,7 @@ namespace target_layout_extended::perf_scope {
             return std::clamp(base_score + delta, 1.0, 10.0);
         }
 
-        [[nodiscard]] auto extract_json_string(std::string_view content, std::string_view key) -> std::string {
+        [[nodiscard]] auto extract_json_string(std::string_view content, std::string_view key) -> std::string_view {
             std::string const pattern = "\"" + std::string(key) + "\"";
             auto const pos = content.find(pattern);
             if (pos == std::string_view::npos) {
@@ -136,7 +136,7 @@ namespace target_layout_extended::perf_scope {
             if (second_quote == std::string_view::npos) {
                 return {};
             }
-            return std::string(content.substr(first_quote + 1U, second_quote - first_quote - 1U));
+            return content.substr(first_quote + 1U, second_quote - first_quote - 1U);
         }
 
         [[nodiscard]] auto extract_json_number(
@@ -288,11 +288,11 @@ namespace target_layout_extended::perf_scope {
             std::string const content = buffer.str();
 
             score_baseline loaded = default_baseline;
-            std::string const comp = extract_json_string(content, "component");
+            std::string_view const comp = extract_json_string(content, "component");
             if (!comp.empty()) {
-                loaded.component = comp;
+                loaded.component = std::string(comp);
             }
-            std::string const curve_str = extract_json_string(content, "utility_curve");
+            std::string_view const curve_str = extract_json_string(content, "utility_curve");
             if (!curve_str.empty()) {
                 loaded.curve = string_to_curve(curve_str);
             }

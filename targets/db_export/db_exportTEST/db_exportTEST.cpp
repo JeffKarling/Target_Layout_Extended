@@ -6,6 +6,9 @@
 #include <string>
 #include <system_error>
 
+#include <ranges>
+#include <vector>
+
 namespace dm = target_layout_extended::database_manager;
 namespace de = target_layout_extended::db_export;
 
@@ -29,6 +32,29 @@ TEST(DbExportTest, FormatsSavedDatabaseSnapshot) {
     EXPECT_NE(output->find("EXP_01"), std::string::npos);
 
     std::filesystem::remove(test_db, ec);
+}
+
+TEST(DbExportTest, FormatsItemRecordsFromRangesViewWithoutAllocatingContainer) {
+    target_layout_extended::Item item1;
+    item1.set_id("VIEW_01");
+    item1.set_name("Low Value Item");
+    item1.set_value(10.0);
+
+    target_layout_extended::Item item2;
+    item2.set_id("VIEW_02");
+    item2.set_name("High Value Item");
+    item2.set_value(95.0);
+
+    std::vector<target_layout_extended::Item> const items = {item1, item2};
+
+    auto high_value_view = items | std::views::filter([](auto const& it) noexcept {
+        return it.value() > 50.0;
+    });
+
+    std::string const report = de::format_item_records(high_value_view);
+    EXPECT_NE(report.find("1 records"), std::string::npos);
+    EXPECT_EQ(report.find("VIEW_01"), std::string::npos);
+    EXPECT_NE(report.find("VIEW_02"), std::string::npos);
 }
 
 TEST(DbExportTest, BoundaryCatchesMissingFileWithoutThrowing) {

@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <mutex>
 #include <optional>
+#include <ranges>
 #include <vector>
 #include <item_proto/item_proto.pb.h>
 #include <journal/journal.hpp>
@@ -53,6 +54,13 @@ namespace target_layout_extended::database_manager {
         [[nodiscard]] auto save_to(const std::filesystem::path& path) const noexcept -> bool;
         [[nodiscard]] auto load() noexcept -> bool;
         [[nodiscard]] auto get_all_items() const noexcept -> std::vector<Item>;
+
+        // Safely inspects items under the internal mutex using a ranges subrange view without copying elements.
+        template <typename Visitor>
+        void view_items(Visitor&& visitor) const noexcept {
+            std::scoped_lock const lock(_db_mutex);
+            visitor(std::ranges::subrange(_database.items().begin(), _database.items().end()));
+        }
 
     private:
         std::filesystem::path _db_path;

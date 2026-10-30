@@ -20,8 +20,6 @@ target_sources(${DIR_NAME}
 target_link_libraries(${DIR_NAME}
         PUBLIC
         ${PROJECT_NAME}::journal
-
-        PRIVATE
         ${PROJECT_NAME}::item_proto
 )
 

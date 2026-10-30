@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <item_proto/item_proto.pb.h>
 #include <journal/journal.hpp>
+#include <ranges>
 #include <string>
 #include <system_error>
 #include <tbb_algos/tbb_algos.hpp>
@@ -35,11 +36,11 @@ int main() {
     return 1;
   }
 
-  for (std::size_t i = 0U; i < numbers.size(); ++i) {
+  for (auto const [index, value] : std::views::enumerate(numbers)) {
     target_layout_extended::Item item;
-    item.set_id("ITEM_" + std::to_string(i + 1U));
-    item.set_name("Component Item " + std::to_string(i + 1U));
-    item.set_value(static_cast<double>(numbers.at(i)));
+    item.set_id("ITEM_" + std::to_string(index + 1U));
+    item.set_name("Component Item " + std::to_string(index + 1U));
+    item.set_value(static_cast<double>(value));
     if (!store->add_item(item)) {
       jrn::log_error("Failed to add item to database_manager");
       return 1;

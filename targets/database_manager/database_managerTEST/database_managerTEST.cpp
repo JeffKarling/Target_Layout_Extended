@@ -85,3 +85,43 @@ TEST(DatabaseManagerTest, FactoryOpenAndMoveSemanticsWork) {
 
     std::filesystem::remove(test_db, ec);
 }
+
+TEST(DatabaseManagerTest, ViewItemsInspectsUnderLockAndRangesFindUpdatesExistingItem) {
+    std::filesystem::path const test_db = "test_view_items.pb";
+    std::error_code ec;
+    std::filesystem::remove(test_db, ec);
+
+    auto store = dm::database_store::open(test_db);
+    ASSERT_TRUE(store.has_value());
+
+    target_layout_extended::Item item1;
+    item1.set_id("ITEM_RANGES_01");
+    item1.set_name("Initial Name");
+    item1.set_value(10.0);
+    EXPECT_TRUE(store->add_item(item1));
+
+    target_layout_extended::Item item1_updated;
+    item1_updated.set_id("ITEM_RANGES_01");
+    item1_updated.set_name("Updated Name");
+    item1_updated.set_value(99.0);
+    EXPECT_TRUE(store->add_item(item1_updated));
+
+    std::size_t visited_count = 0U;
+    std::string found_name;
+    double found_value = 0.0;
+
+    store->view_items([&](auto const& items_range) {
+        for (auto const& item : items_range) {
+            ++visited_count;
+            found_name = item.name();
+            found_value = item.value();
+        }
+    });
+
+    EXPECT_EQ(visited_count, 1U);
+    EXPECT_EQ(found_name, "Updated Name");
+    EXPECT_DOUBLE_EQ(found_value, 99.0);
+
+    std::filesystem::remove(test_db, ec);
+}
+
