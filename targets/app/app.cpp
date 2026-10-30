@@ -1,4 +1,3 @@
-#include <cstddef>
 #include <database_manager/database_manager.hpp>
 #include <db_export/db_export.hpp>
 #include <filesystem>
