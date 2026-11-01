@@ -46,6 +46,24 @@ set_target_properties(${DIR_NAME} PROPERTIES
 )
 ```
 
+## Test targets and framework macro suppressions
+
+Testing frameworks like GoogleTest rely on static test case registration macros. These macros trigger Clang diagnostics such as `-Wglobal-constructors`.
+
+Do not pollute `cmake/dependencies.cmake` with target options on imported libraries. Every test target under `targets/<name>/<name>TEST/` must declare its own compiler options using generator expressions.
+
+```cmake
+include(${CMAKE_BINARY_DIR}/target_properties.cmake)
+include(${CMAKE_BINARY_DIR}/target_compile_options.cmake)
+
+# Suppress Clang warning from GoogleTest static test registry macros
+target_compile_options(${DIR_NAME} PRIVATE
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-global-constructors>
+)
+```
+
+Because test directories are only included when `BUILD_TESTING` is active, the suppression stays localized to test executables.
+
 ## Specialized performance adjustments
 
 Specialized performance targets may require custom optimization flags or relaxed frame pointers.

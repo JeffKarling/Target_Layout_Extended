@@ -15,9 +15,4 @@ pkg_check_modules(libsystemd GLOBAL REQUIRED IMPORTED_TARGET libsystemd)
 
 if(BUILD_TESTING)
     pkg_check_modules(GTEST GLOBAL REQUIRED IMPORTED_TARGET gtest gtest_main)
-    if(TARGET PkgConfig::GTEST)
-        target_compile_options(PkgConfig::GTEST INTERFACE
-                $<$<CXX_COMPILER_ID:Clang>:-Wno-global-constructors>
-        )
-    endif()
 endif()

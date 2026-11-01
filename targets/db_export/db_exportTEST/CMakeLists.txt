@@ -6,6 +6,10 @@ add_executable(${DIR_NAME} ${DIR_NAME}.cpp)
 include(${CMAKE_BINARY_DIR}/target_properties.cmake)
 include(${CMAKE_BINARY_DIR}/target_compile_options.cmake)
 
+target_compile_options(${DIR_NAME} PRIVATE
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-global-constructors>
+)
+
 target_link_libraries(${DIR_NAME}
         PRIVATE
         ${PROJECT_NAME}::${COMPONENT_NAME}
