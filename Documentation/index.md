@@ -10,7 +10,7 @@ This guide details the infrastructure required for production Linux engineering.
 
 The project targets Linux and resolves every third party dependency through `pkg-config` in `cmake/dependencies.cmake`.
 
-* **Toolchain.** CMake 3.25 or newer, GCC and Clang with C++23 support. The `journal` component links `stdc++exp` for `std::stacktrace`, so both compilers build against libstdc++ from GCC 14 or newer.
+* **Toolchain.** CMake 3.25 or newer, GCC and Clang with C++23 support. The `journal` component links `-lstdc++exp` for `std::stacktrace` via generator expression, so both compilers build against libstdc++ from GCC 14 or newer.
 * **Libraries.** `protobuf` with a matching `protoc`, `tbb`, `libsystemd` and `gtest` when `BUILD_TESTING` is on.
 * **Optional tools.** `perf` for the profiling targets, `dot` from Graphviz for the dependency graph, plus `clang-tidy`, `include-what-you-use` and `cppcheck` for static analysis. `ccache` is picked up automatically when present.
 
@@ -57,7 +57,7 @@ Each file inside the component folder serves a distinct architectural role.
 
 ### The journal component sits at the lowest level
 
-Because `struct catalog` holds `journal::catalog_entry` fields and lives in the public header, every operational component links `${PROJECT_NAME}::journal` as `PUBLIC`. In Lakos terms `journal` is a level one component that every service component depends on. It must therefore stay small and stable, and it never links back to any component under `targets/`. Its own private dependencies on `libsystemd` and `stdc++exp` do not leak into consumer headers. The component captures pre unwind binary stack traces directly into stack buffers without runtime string formatting or DWARF lookup overhead. Raw instruction pointers transmit via `sd_journal_sendv` in `RAW_PAYLOAD` for offline symbolization through `addr2line`.
+Because `struct catalog` holds `journal::catalog_entry` fields and lives in the public header, every operational component links `${PROJECT_NAME}::journal` as `PUBLIC`. In Lakos terms `journal` is a level one component that every service component depends on. It must therefore stay small and stable, and it never links back to any component under `targets/`. Its own private dependencies on `libsystemd` and `-lstdc++exp` do not leak into consumer headers. The component captures pre unwind binary stack traces directly into stack buffers without runtime string formatting or DWARF lookup overhead. Raw instruction pointers transmit via `sd_journal_sendv` in `RAW_PAYLOAD` for offline symbolization through `addr2line`.
 
 ## Centralized target configuration without custom macros
 

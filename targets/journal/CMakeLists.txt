@@ -20,7 +20,7 @@ target_sources(${DIR_NAME}
 target_link_libraries(${DIR_NAME}
         PRIVATE
         PkgConfig::libsystemd
-        stdc++exp
+        $<$<CXX_COMPILER_ID:GNU,Clang>:-lstdc++exp>
 )
 
 if(BUILD_TESTING)

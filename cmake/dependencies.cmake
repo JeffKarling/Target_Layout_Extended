@@ -13,13 +13,6 @@ endif()
 pkg_check_modules(tbb GLOBAL REQUIRED IMPORTED_TARGET tbb)
 pkg_check_modules(libsystemd GLOBAL REQUIRED IMPORTED_TARGET libsystemd)
 
-if(NOT TARGET toolchain::stdc++exp)
-    add_library(toolchain::stdc++exp INTERFACE IMPORTED GLOBAL)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        target_link_libraries(toolchain::stdc++exp INTERFACE -lstdc++exp)
-    endif()
-endif()
-
 if(BUILD_TESTING)
     pkg_check_modules(GTEST GLOBAL REQUIRED IMPORTED_TARGET gtest gtest_main)
     if(TARGET PkgConfig::GTEST)
