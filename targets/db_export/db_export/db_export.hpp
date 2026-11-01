@@ -10,13 +10,14 @@
 
 namespace target_layout_extended::db_export {
 
-    namespace catalog {
-        inline constexpr journal::catalog_entry k_export_failed{
+    struct catalog {
+        journal::catalog_entry k_export_failed{
             .message_id = "8e4c9201b7a34d568f120c93e5d7b301",
             .component = "db_export",
             .summary = "Database snapshot export failure caught at component boundary"
         };
-    } // namespace catalog
+    };
+    inline constexpr catalog k_catalog{};
 
     // Formats any range or view of Item records into a human-readable snapshot without intermediate allocations.
     template <std::ranges::input_range R>

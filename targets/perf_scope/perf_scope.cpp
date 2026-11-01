@@ -245,8 +245,7 @@ namespace target_layout_extended::perf_scope {
             }
             std::ofstream out(baseline_path, std::ios::out | std::ios::trunc);
             if (!out.is_open()) {
-                jrn::log_error(k_baseline_io_error, baseline_path.string());
-                return false;
+                throw jrn::catalog_exception(k_baseline_io_error, baseline_path.string());
             }
             out << std::fixed << std::setprecision(3);
             out << "{\n";

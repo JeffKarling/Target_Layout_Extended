@@ -98,56 +98,32 @@ if(BUILD_TESTING)
 endif()
 ```
 
-## Step 3. Define catalog entries
+## Step 3. Define boundary catalog entries
 
-Document operational events and boundary errors in `targets/<name>/<name>.catalog`.
+Document public boundary failure contracts in `targets/<name>/<name>.catalog`.
 
-Catalogs serve as the public interface documentation. By reading public catalog definitions, the reader should understand the component's high level features and capabilities without reading the actual code. The more catalog entries that are used to define distinct operations and checkpoints, the better the reader understands what the component does.
+Catalog entries are reserved strictly for `noexcept` boundary failures caught by `journal::catch_boundary_exception`. Small components typically define a single boundary failure entry, which the compiler deduces automatically. Larger components can define multiple entries in `struct catalog` and select them explicitly via `journal::catalog_exception` and `journal::catch_boundary_exception`.
 
-Rethrowing more than one exception across a boundary is a code smell. However, adding multiple public catalog log entries across different severity levels represents good design. Catalog logs are purely informative and do not steer application logic.
-
-Follow `.agents/rules/boundary_exceptions_and_catalog_logging.md` to define informative events alongside the boundary failure entry:
-
-```text
--- 51a3b901c2d44f6e87a213098df24101
-@ COMPONENT=<name>
-@ SUMMARY=Component initialization completed successfully
-
--- 51a3b901c2d44f6e87a213098df24102
-@ COMPONENT=<name>
-@ SUMMARY=Workload throughput fell below optimal threshold
-
--- 51a3b901c2d44f6e87a213098df24103
-@ COMPONENT=<name>
-@ SUMMARY=Unhandled fault caught at component boundary firewall
-```
-
-Declare corresponding constants in `targets/<name>/<name>/<name>.hpp`:
+Declare the closed `struct catalog` in `targets/<name>/<name>/<name>.hpp`:
 
 ```cpp
-namespace target_layout_extended::<name>::catalog {
-    inline constexpr journal::catalog_entry k_initialized{
-        .message_id = "51a3b901c2d44f6e87a213098df24101",
-        .component = "<name>",
-        .summary = "Component initialization completed successfully"
+namespace target_layout_extended::<name> {
+    struct catalog {
+        journal::catalog_entry k_boundary_fault{
+            .message_id = "51a3b901c2d44f6e87a213098df24103",
+            .component = "<name>",
+            .summary = "Unhandled fault caught at component boundary firewall"
+        };
     };
-    inline constexpr journal::catalog_entry k_throughput_warning{
-        .message_id = "51a3b901c2d44f6e87a213098df24102",
-        .component = "<name>",
-        .summary = "Workload throughput fell below optimal threshold"
-    };
-    inline constexpr journal::catalog_entry k_boundary_fault{
-        .message_id = "51a3b901c2d44f6e87a213098df24103",
-        .component = "<name>",
-        .summary = "Unhandled fault caught at component boundary firewall"
-    };
-} // namespace target_layout_extended::<name>::catalog
+    inline constexpr catalog k_catalog{};
+} // namespace target_layout_extended::<name>
 ```
 
 ## Step 4. Add comprehensive unit tests
 
 Scaffold `targets/<name>/<name>TEST/` before completing the implementation.
 Add unit tests covering:
+* Compile time `static_assert(target_layout_extended::journal::is_valid_catalog(k_catalog));`.
 * Typical valid inputs and happy paths.
 * Boundary conditions and edge cases.
 * Invalid inputs caught safely without leaking exceptions.
@@ -155,16 +131,16 @@ Add unit tests covering:
 ## Step 5. Implement logic, logging, and boundary exception firewall
 
 Implement the member functions in `targets/<name>/<name>.cpp`.
-Emit informative catalog logs during normal execution. Enclose the public boundary in a single `try` block, delegating any unhandled fault to `journal::catch_boundary_exception()`:
+Emit internal diagnostics using `journal::log` with strong types `journal::severity`, `journal::message`, and `journal::binary_payload`. Enclose the public boundary in a single `try` block, delegating any unhandled fault to `journal::catch_boundary_exception`:
 
 ```cpp
 auto <name>::process(std::span<const std::byte> payload) noexcept -> bool {
     try {
         // Implementation logic
-        journal::log_info(catalog::k_initialized, "Processing started");
+        journal::log(journal::severity::info, journal::message{"processing started"});
         return true;
     } catch (...) {
-        return journal::catch_boundary_exception(catalog::k_boundary_fault);
+        return journal::catch_boundary_exception(k_catalog);
     }
 }
 ```

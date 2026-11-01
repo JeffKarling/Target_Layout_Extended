@@ -38,7 +38,7 @@ namespace target_layout_extended::database_manager {
     auto database_store::open(const std::filesystem::path& db_path) noexcept -> std::optional<database_store> {
         try {
             if (db_path.empty()) {
-                throw std::invalid_argument("database path must not be empty");
+                throw journal::catalog_exception(k_catalog.k_init_failed, "database path must not be empty");
             }
             database_store store;
             if (!store.initialize(db_path)) {
@@ -46,7 +46,7 @@ namespace target_layout_extended::database_manager {
             }
             return store;
         } catch (...) {
-            (void)journal::catch_boundary_exception(catalog::k_init_failed);
+            (void)journal::catch_boundary_exception(k_catalog.k_init_failed);
             return std::nullopt;
         }
     }
@@ -59,20 +59,20 @@ namespace target_layout_extended::database_manager {
     auto database_store::initialize(const std::filesystem::path& db_path) noexcept -> bool {
         try {
             if (db_path.empty()) {
-                throw std::invalid_argument("database path must not be empty");
+                throw journal::catalog_exception(k_catalog.k_init_failed, "database path must not be empty");
             }
             std::scoped_lock const lock(_db_mutex);
             _db_path = db_path;
             return load();
         } catch (...) {
-            return journal::catch_boundary_exception(catalog::k_init_failed);
+            return journal::catch_boundary_exception(k_catalog.k_init_failed);
         }
     }
 
     auto database_store::add_item(const Item& item) noexcept -> bool {
         try {
             if (item.id().empty()) {
-                throw std::invalid_argument("item id must not be empty");
+                throw journal::catalog_exception(k_catalog.k_add_item_failed, "item id must not be empty");
             }
             std::scoped_lock const lock(_db_mutex);
 
@@ -89,7 +89,7 @@ namespace target_layout_extended::database_manager {
             *(_database.add_items()) = item;
             return true;
         } catch (...) {
-            return journal::catch_boundary_exception(catalog::k_add_item_failed);
+            return journal::catch_boundary_exception(k_catalog.k_add_item_failed);
         }
     }
 
@@ -100,19 +100,28 @@ namespace target_layout_extended::database_manager {
     auto database_store::save_to(const std::filesystem::path& path) const noexcept -> bool {
         try {
             if (!detail::is_writable_path(path)) {
-                throw std::runtime_error("destination path is not writable: " + path.string());
+                throw journal::catalog_exception(
+                    k_catalog.k_save_failed,
+                    "destination path is not writable: " + path.string()
+                );
             }
 
             std::ofstream out(path.string(), std::ios::out | std::ios::binary | std::ios::trunc);
             if (!out.is_open()) {
-                throw std::runtime_error("failed to open destination file: " + path.string());
+                throw journal::catalog_exception(
+                    k_catalog.k_save_failed,
+                    "failed to open destination file: " + path.string()
+                );
             }
             if (!_database.SerializeToOstream(&out)) {
-                throw std::runtime_error("protobuf serialization failed for: " + path.string());
+                throw journal::catalog_exception(
+                    k_catalog.k_save_failed,
+                    "protobuf serialization failed for: " + path.string()
+                );
             }
             return true;
         } catch (...) {
-            return journal::catch_boundary_exception(catalog::k_save_failed);
+            return journal::catch_boundary_exception(k_catalog.k_save_failed);
         }
     }
 
@@ -130,11 +139,14 @@ namespace target_layout_extended::database_manager {
             }
             if (!_database.ParseFromIstream(&input)) {
                 _database.Clear();
-                throw std::runtime_error("failed to parse binary database: " + _db_path.string());
+                throw journal::catalog_exception(
+                    k_catalog.k_load_failed,
+                    "failed to parse binary database: " + _db_path.string()
+                );
             }
             return true;
         } catch (...) {
-            return journal::catch_boundary_exception(catalog::k_load_failed);
+            return journal::catch_boundary_exception(k_catalog.k_load_failed);
         }
     }
 
@@ -148,7 +160,7 @@ namespace target_layout_extended::database_manager {
             }
             return result;
         } catch (...) {
-            (void)journal::catch_boundary_exception(catalog::k_load_failed);
+            (void)journal::catch_boundary_exception(k_catalog.k_load_failed);
             return {};
         }
     }

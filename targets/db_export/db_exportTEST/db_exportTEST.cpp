@@ -12,6 +12,9 @@
 namespace dm = target_layout_extended::database_manager;
 namespace de = target_layout_extended::db_export;
 
+static_assert(target_layout_extended::journal::single_entry_catalog<de::catalog>);
+static_assert(target_layout_extended::journal::is_valid_catalog(de::k_catalog));
+
 TEST(DbExportTest, FormatsSavedDatabaseSnapshot) {
     std::filesystem::path const test_db = "test_export.pb";
     std::error_code ec;

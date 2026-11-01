@@ -1,59 +1,56 @@
-# Boundary exceptions and informative catalog logging
+# Boundary exceptions and catalog contract logging
 
-## Rethrowing more than one exception is a code smell
+## Rethrowing more than one exception across boundaries is a code smell
 
-Every physical component in this repository must maintain a clean boundary contract.
+Every physical component in this repository must maintain a clean `noexcept` boundary contract.
 
-Rethrowing more than one exception across a component boundary is a code smell. A focused physical component must handle its own domain logic internally, exposing at most a single boundary catch all firewall.
+Rethrowing exceptions across a component boundary is a code smell. A focused physical component handles recoverable domain conditions internally and exposes a `noexcept` boundary returning `bool` or `std::optional`.
 
-## Exceptions steer application flow
+## Decoupling control flow from failure root causes
 
-Exceptions act like road crossing traffic lights. They halt execution and steer application control flow.
+When a component exposes multiple exception pathways or detailed error enums in its return type, it creates tight symbiosis between caller and callee. The upstream caller becomes coupled to callee internal failure hierarchies.
 
-When a component exposes multiple exception pathways, it creates tight symbiosis between caller and callee. The upstream caller becomes tightly coupled to callee internal failure hierarchies.
+If an upstream caller genuinely needs to branch on two different conditions, the component should split the operation into separate functions or split into smaller targets. Once a boundary function gives up, the upstream C++ caller only needs `false` or `std::nullopt` to steer control flow, while `systemd-journald` receives the exact failure root cause.
 
-If an attempted design requires multiple distinct exception types at the boundary, the component is likely doing too much. The solution is splitting the component into smaller targets, not multiplying boundary exceptions.
+## Catalogs represent boundary contract failures
 
-## Informative catalog logging is not control flow
+Message catalogs in `<name>.catalog` and `struct catalog` document the public boundary failure contracts of a physical component.
 
-While exposing multiple exceptions is an anti pattern, defining multiple public catalog log entries is encouraged.
+Catalog entries are reserved strictly for `noexcept` boundary failures handled by `journal::catch_boundary_exception` and `journal::catalog_exception`. Routine internal component diagnostics use `journal::log` with strong types and never require catalog UUIDs.
 
-Catalog logs are purely informative. They never alter application control flow or burden upstream callers. Upstream consumers inspect return values rather than intercepting log telemetry.
+## Automatic deduction for single entry components and explicit selection for multi entry components
 
-Adding multiple catalog log entries represents good design. Catalog entries can span all standard severity levels from debug to critical, providing structured observability for systemd journald.
+Each component defines a closed `struct catalog` aggregate and `inline constexpr catalog k_catalog{};` in its public header.
 
-## Catalogs as public interface documentation
+**Single entry components.** When `struct catalog` contains only one `catalog_entry`, the `journal::single_entry_catalog` concept is satisfied at compile time. The boundary `catch` block calls `journal::catch_boundary_exception(k_catalog)` without naming the individual entry.
 
-Message catalogs serve as the public interface documentation for every physical component.
-
-By reading public catalog definitions, the reader should understand the component's high level features and capabilities without reading the actual code. The more catalog entries used across the component, the better the reader understands what the component is doing.
-
-Catalogs form an index of capabilities, state transitions, and diagnostic checkpoints. While exception throwing must remain strictly minimal, catalog definitions should be expansive across all standard severity classifications.
-
-## Rich catalog entries across severity levels
-
-A cohesive component can define multiple catalog entries across standard severity classifications.
-
-**Informational lifecycle milestones.** Log normal state transitions, such as completing initialization or processing a major batch.
-
-**Warning thresholds.** Log degraded operational conditions, retry events, or cache capacity warnings.
-
-**Boundary fault telemetry.** Pair the single boundary exception firewall tightly with a documented error or critical catalog entry.
+**Multi entry components.** When `struct catalog` contains multiple `catalog_entry` fields, the compiler rejects `journal::catch_boundary_exception(k_catalog)`. Each boundary `catch` block must explicitly pass its fallback `catalog_entry`, and internal helpers can throw `journal::catalog_exception` to select a specific `catalog_entry` and capture the binary `std::stacktrace` before stack unwinding begins.
 
 ## Implementation pattern
 
-The single boundary exception handler catches unexpected faults, logs against the failure catalog entry, and returns a value based status. Informative catalog entries log operational telemetry during normal execution.
-
 ```cpp
-auto database_manager::add_item(const item_proto::Item& item) noexcept -> bool {
+// Small component with a single catalog entry
+auto parallel_double(std::span<int> numbers) noexcept -> bool {
     try {
-        // Implementation logic
-        journal::log_info(catalog::k_item_added, item.name());
+        run_parallel_work(numbers);
         return true;
     } catch (...) {
-        return journal::catch_boundary_exception(catalog::k_boundary_failure);
+        return journal::catch_boundary_exception(k_catalog);
+    }
+}
+
+// Larger component with multiple catalog entries
+auto database_store::add_item(const Item& item) noexcept -> bool {
+    try {
+        if (item.id().empty()) {
+            throw journal::catalog_exception(k_catalog.k_add_item_failed, "item id must not be empty");
+        }
+        insert_internal(item);
+        return true;
+    } catch (...) {
+        return journal::catch_boundary_exception(k_catalog.k_add_item_failed);
     }
 }
 ```
 
-This architecture keeps components loosely coupled while delivering deep operational observability.
+This architecture keeps components loosely coupled while delivering pre unwind binary stacktraces and structured contract observability.

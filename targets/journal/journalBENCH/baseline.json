@@ -1,0 +1,13 @@
+{
+  "component": "journal",
+  "human_baseline_score": 6.000,
+  "target_score": 8.500,
+  "token_budget": 4000,
+  "utility_curve": "logarithmic",
+  "wall_ns_per_op": 246755.215,
+  "cycles_per_op": 376387.935,
+  "instructions_per_op": 268963.385,
+  "ipc": 0.715,
+  "branch_misses_per_op": 1.370,
+  "cache_misses_per_op": 189.135
+}

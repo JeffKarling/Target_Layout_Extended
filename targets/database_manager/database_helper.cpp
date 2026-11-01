@@ -16,7 +16,10 @@ namespace target_layout_extended::database_manager::detail {
         }
         std::error_code err_code;
         if (!std::filesystem::exists(parent, err_code)) {
-            journal::log_error("parent directory does not exist for path: " + path.string());
+            journal::log(
+                journal::severity::error,
+                journal::message{"parent directory does not exist for path: " + path.string()}
+            );
             return false;
         }
         return (std::filesystem::status(parent, err_code).permissions() & std::filesystem::perms::owner_write) !=

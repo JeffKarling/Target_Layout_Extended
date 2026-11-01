@@ -6,6 +6,9 @@
 
 namespace ta = target_layout_extended::tbb_algos;
 
+static_assert(target_layout_extended::journal::single_entry_catalog<ta::catalog>);
+static_assert(target_layout_extended::journal::is_valid_catalog(ta::k_catalog));
+
 TEST(TbbAlgosTest, ParallelDoubleDoublesValues) {
     std::vector<int> numbers = {1, 2, 3, 4, 5};
     EXPECT_TRUE(ta::parallel_double(numbers));

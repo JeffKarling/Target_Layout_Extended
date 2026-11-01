@@ -25,13 +25,13 @@ int main() {
 
   auto store = dm::database_store::open(db_path);
   if (!store) {
-    jrn::log_error("Failed to open database_manager");
+    jrn::log(jrn::severity::error, jrn::message{"Failed to open database_manager"});
     return 1;
   }
 
   std::vector<int> numbers = {10, 20, 30, 40, 50, 60, 70, 80};
   if (!ta::parallel_double(numbers)) {
-    jrn::log_error("Failed to execute tbb_algos::parallel_double");
+    jrn::log(jrn::severity::error, jrn::message{"Failed to execute tbb_algos::parallel_double"});
     return 1;
   }
 
@@ -41,23 +41,23 @@ int main() {
     item.set_name("Component Item " + std::to_string(index + 1U));
     item.set_value(static_cast<double>(value));
     if (!store->add_item(item)) {
-      jrn::log_error("Failed to add item to database_manager");
+      jrn::log(jrn::severity::error, jrn::message{"Failed to add item to database_manager"});
       return 1;
     }
   }
 
   if (!store->save()) {
-    jrn::log_error("Failed to save database snapshot");
+    jrn::log(jrn::severity::error, jrn::message{"Failed to save database snapshot"});
     return 1;
   }
 
   auto const formatted = de::format_database_snapshot(db_path);
   if (!formatted) {
-    jrn::log_error("Failed to format database snapshot");
+    jrn::log(jrn::severity::error, jrn::message{"Failed to format database snapshot"});
     return 1;
   }
 
-  jrn::log_info(*formatted);
+  jrn::log(jrn::severity::info, jrn::message{*formatted});
   std::filesystem::remove(db_path, err_code);
   return 0;
 }

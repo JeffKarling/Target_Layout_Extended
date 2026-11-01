@@ -27,7 +27,7 @@ namespace target_layout_extended::db_export {
 
             return format_item_records(database.items());
         } catch (...) {
-            (void)journal::catch_boundary_exception(catalog::k_export_failed);
+            (void)journal::catch_boundary_exception(k_catalog);
             return std::nullopt;
         }
     }

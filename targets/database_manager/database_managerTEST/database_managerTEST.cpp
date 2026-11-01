@@ -9,11 +9,14 @@
 
 namespace dm = target_layout_extended::database_manager;
 
+static_assert(target_layout_extended::journal::is_valid_catalog(dm::k_catalog));
+static_assert(!target_layout_extended::journal::single_entry_catalog<dm::catalog>);
+
 TEST(DatabaseManagerTest, CatalogIdsAreValidHexUuids) {
-    EXPECT_TRUE(target_layout_extended::journal::is_valid_message_id(dm::catalog::k_init_failed.message_id));
-    EXPECT_TRUE(target_layout_extended::journal::is_valid_message_id(dm::catalog::k_add_item_failed.message_id));
-    EXPECT_TRUE(target_layout_extended::journal::is_valid_message_id(dm::catalog::k_save_failed.message_id));
-    EXPECT_TRUE(target_layout_extended::journal::is_valid_message_id(dm::catalog::k_load_failed.message_id));
+    EXPECT_TRUE(target_layout_extended::journal::is_valid_message_id(dm::k_catalog.k_init_failed.message_id));
+    EXPECT_TRUE(target_layout_extended::journal::is_valid_message_id(dm::k_catalog.k_add_item_failed.message_id));
+    EXPECT_TRUE(target_layout_extended::journal::is_valid_message_id(dm::k_catalog.k_save_failed.message_id));
+    EXPECT_TRUE(target_layout_extended::journal::is_valid_message_id(dm::k_catalog.k_load_failed.message_id));
 }
 
 TEST(DatabaseManagerTest, AddRetrieveAndSaveItemsWorks) {

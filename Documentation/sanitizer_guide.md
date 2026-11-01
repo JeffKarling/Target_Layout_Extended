@@ -32,7 +32,7 @@
 | `Clang_UBSan` | `clang++` | Signed integer overflow, null dereference, misaligned access | `Clang_UBSan_Verify` |
 | `Clang_TSan` | `clang++` | Multithreaded data races and lock order inversions | `Clang_TSan_Verify` |
 | `Clang_LSan` | `clang++` | Standalone heap memory leak detection at process exit | `Clang_LSan_Verify` |
-| `Clang_MSan` | `clang++` | Reads from uninitialized stack or heap memory | `Clang_MSan` |
+| `Clang_MSan` | `clang++` | Reads from uninitialized stack or heap memory | None, configure and build only |
 | `GNU_ASan` | `g++` | Heap, stack, and global buffer overflows, use after free | `GNU_ASan_Verify` |
 | `GNU_UBSan` | `g++` | Undefined behavior across arithmetic and pointers | `GNU_UBSan_Verify` |
 
@@ -72,7 +72,8 @@ cmake --preset Clang_ASan && cmake --build --preset Clang_ASan
 
 In `cmake/templates/target_compile_options.cmake`, sanitizer flags are applied to both `target_compile_options` and `target_link_options`. Passing `-fsanitize=*` only at compile time or only at link time produces an uninstrumented or broken binary.
 
-* **Blocking UBSan in Clang.** By default, UBSan prints a warning and continues running, which allows `ctest` to report a passing exit code even when undefined behavior occurred. Adding `-fno-sanitize-recover=undefined` causes the test binary to abort with a stack trace so `ctest` fails cleanly.
+* **Blocking UBSan in Clang only.** By default UBSan prints a warning and continues running, which lets `ctest` report success even when undefined behavior occurred. `Clang_UBSan` adds `-fno-sanitize-recover=undefined` so the test aborts and fails. `GNU_UBSan` does not pass that flag yet, so read its test output rather than trusting the exit code alone.
+* **Assertions are disabled.** Every sanitizer configuration defines `NDEBUG`, so `assert()` checks do not run under sanitizers. Use the `*_Custom_Debug` presets to exercise assertions.
 * **Position independent executables for TSan and LSan.** ThreadSanitizer and LeakSanitizer reserve specific virtual address shadow regions on Linux and require `-fPIE` at compile time and `-pie` at link time.
 * **Frame pointer preservation.** Every sanitizer preset passes `-fno-omit-frame-pointer` and `-fno-optimize-sibling-calls` at `-O2` so shadow memory stack unwinders produce complete call stacks.
-* **MemorySanitizer considerations.** `Clang_MSan` tracks uninitialized bit propagation across instructions via `-fsanitize-memory-track-origins=2`. Because MSan requires every linked C++ library including `libstdc++` or `libc++` and `libprotobuf` to be compiled with `-fsanitize=memory` to avoid false positives inside uninstrumented system libraries, use `Clang_MSan` on self contained components that do not link prebuilt system shared libraries.
+* **MemorySanitizer considerations.** `Clang_MSan` tracks uninitialized bit propagation via `-fsanitize-memory-track-origins=2`. MSan reports false positives unless every linked library is also instrumented, and that includes the C++ standard library and `libprotobuf`. This project links prebuilt system libraries, so treat `Clang_MSan` as a build check and run individual tests manually on self contained components.

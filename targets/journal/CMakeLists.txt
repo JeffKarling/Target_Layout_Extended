@@ -20,8 +20,10 @@ target_sources(${DIR_NAME}
 target_link_libraries(${DIR_NAME}
         PRIVATE
         PkgConfig::libsystemd
+        stdc++exp
 )
 
 if(BUILD_TESTING)
     add_subdirectory(${DIR_NAME}TEST)
+    add_subdirectory(${DIR_NAME}BENCH)
 endif()

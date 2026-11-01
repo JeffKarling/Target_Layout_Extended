@@ -11,7 +11,9 @@ cmake --preset Clang_Tidy
 cmake --build --preset Clang_Tidy
 ```
 
-In `cmake/templates/target_properties.cmake`, `CXX_CLANG_TIDY` is attached automatically when `CMAKE_BUILD_TYPE` is `Clang_Tidy`. Machine generated components such as `targets/item_proto/` clear `CXX_CLANG_TIDY` on their own target so generated Protobuf files do not clutter static analysis output.
+In `cmake/templates/target_properties.cmake`, `CXX_CLANG_TIDY` is attached only when the build type is `Clang_Tidy`. The enabled groups are `bugprone`, `clang-analyzer`, `concurrency`, `cppcoreguidelines`, `google`, `modernize`, `performance` and `readability`, with `modernize-use-trailing-return-type` disabled. The checks are passed on the command line rather than through a `.clang-tidy` file, so edit that property to change them.
+
+The root `CMakeLists.txt` forces `BUILD_TESTING` off for any build type containing `Tidy`. Only component libraries and `app` are analyzed. Test and benchmark sources are not. Machine generated components such as `targets/item_proto/` clear `CXX_CLANG_TIDY` on their own target so generated Protobuf files do not clutter the output.
 
 ### Warning classification and clang_tidy_state.md
 

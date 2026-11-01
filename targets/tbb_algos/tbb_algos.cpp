@@ -13,7 +13,7 @@ namespace target_layout_extended::tbb_algos {
             });
             return true;
         } catch (...) {
-            return journal::catch_boundary_exception(catalog::k_parallel_execution_failed);
+            return journal::catch_boundary_exception(k_catalog);
         }
     }
 
@@ -35,7 +35,7 @@ namespace target_layout_extended::tbb_algos {
             });
             return true;
         } catch (...) {
-            return journal::catch_boundary_exception(catalog::k_parallel_execution_failed);
+            return journal::catch_boundary_exception(k_catalog);
         }
     }
 

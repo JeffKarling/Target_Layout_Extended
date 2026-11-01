@@ -2,32 +2,30 @@
 
 ## Core mandate
 
-Agents must log generously across components without fearing runtime overhead.
+Agents must log generously across components without fearing heap allocation overhead.
 
-Generating a log event in application code is nearly free. It performs a lock free write of raw values and compile time pointers into a preallocated memory slot.
+The `journal` backend formats structured fields into stack buffers using `constexpr` helpers and transmits them in a single vector call via `sd_journal_sendv`. Never withhold internal diagnostics under the mistaken assumption that logging slows down execution.
 
-Never withhold diagnostics under the mistaken assumption that logging slows down critical execution.
+## All eight Syslog severity classifications
 
-## Standard severity classifications
+Use the strong scoped enumeration `journal::severity` covering all eight standard Syslog levels from `emergency`, `alert`, `critical`, `error`, `warning`, `notice`, `info`, to `debug`.
 
-Use standard severity levels including `debug`, `info`, `warning`, `error`, and `critical`.
+Pass strong types `journal::severity`, `journal::message`, and `journal::binary_payload` in any order to `journal::log`. The component name is deduced automatically at compile time from the caller source location under the physical one name rule.
 
-Tag each log event with its natural severity level. Decisions regarding filtering, sampling, or post processing are handled asynchronously inside the logging component.
+## Catalog entries strictly at component boundaries
 
-Under the default flight recorder policy, even verbose `debug` events stay strictly in a preallocated RAM ring buffer. They incur zero disk I/O cost unless a fault triggers a lookbehind flush.
+Operational boundaries tie unhandled internal exceptions to documented catalog entries in `<name>.catalog` and `struct catalog`.
 
-## Structured catalog entries at component boundaries
-
-Operational boundaries must tie diagnostic and error events to documented catalog entries.
-
-Use catalog entries defined in `<name>.catalog` for boundary failures. Every catalog event carries an invariant UUID message identifier, component name, and human readable summary.
-
-This allows automated log aggregators and systemd journald to index events deterministically across deployments.
+Use `journal::catch_boundary_exception` in boundary `catch` blocks and `journal::catalog_exception` when throwing specific contract failures internally. Every boundary failure event automatically attaches a binary `std::stacktrace` payload in `RAW_PAYLOAD=` alongside the invariant UUID `MESSAGE_ID`.
 
 ## Logging raw binary payloads
 
 Take advantage of native binary logging capabilities when diagnosing state corruption.
 
-Unlike traditional text only loggers, the native wire protocol of `systemd-journald` accepts arbitrary length prefixed binary payloads. These payloads are passed as `std::span<const std::byte>` without hex or base64 encoding overhead.
+Unlike text only loggers, the native wire protocol of `systemd-journald` accepts arbitrary length prefixed binary payloads via `sd_journal_sendv`. Wrap raw C++ structs, network packets, serialization headers, or memory snapshots using `journal::binary_payload` or `journal::as_binary_payload` without hex or base64 encoding overhead.
 
-Attach raw C++ structs, network packets, serialization headers, or memory snapshots directly to log entries during error investigations.
+## Offline symbolization with addr2line
+
+Binary stack traces attached in `RAW_PAYLOAD=` contain raw machine instruction pointers.
+
+Do not attempt to demangle or symbolize stack traces at runtime inside component boundaries. Offline tools such as `addr2line` or `llvm-addr2line` map the captured 64 bit addresses back to source files and function names against the debug binary.

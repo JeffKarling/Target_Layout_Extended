@@ -1,12 +1,12 @@
 # Benchmarking and score optimization
 
-Profiling an entire application binary mixes algorithmic hot loops with startup overhead, file I/O, and serialization work. In monolithic projects where components are large or tightly coupled, filtering out that background activity often requires instrumenting production source code with vendor specific profiler annotations such as Intel VTune ITT markers, NVIDIA NVTX ranges, AMD uProf user markers, or Valgrind Callgrind macros.
+Monolithic performance profiling mixes algorithmic hot loops with startup routines, filesystem I/O and process teardown. Isolating the hot path in a large codebase often requires invasive source annotations such as Intel VTune ITT markers or Valgrind macros.
 
-When a project decomposes software into small, focused physical components, source code instrumentation becomes unnecessary. Because each component has a narrow dependency graph and a self contained interface, its hot path can be exercised directly by a colocated benchmark executable in `<name>BENCH/` using Linux kernel hardware counters in `targets/perf_scope/` and score driven evaluation in `baseline.json`.
+When software is decomposed into Lakos physical components, source instrumentation becomes unnecessary. Every component has a narrow dependency graph and a self contained interface. Its hot path can be measured in isolation through a colocated benchmark in `<name>BENCH/` using hardware performance counters from `targets/perf_scope/` and score driven regression checks in `baseline.json`.
 
 ## Colocated component benchmarks
 
-Just as `<name>TEST/` verifies a component's correctness in isolation, `<name>BENCH/` measures a component's physical performance in isolation.
+Just as `<name>TEST/` isolates unit verification, `<name>BENCH/` isolates performance measurement.
 
 ```text
 targets/tbb_algos/
@@ -24,7 +24,7 @@ targets/tbb_algos/
     └── baseline.json
 ```
 
-The benchmark `CMakeLists.txt` follows the same `${DIR_NAME}` derivation rule as unit tests.
+The benchmark `CMakeLists.txt` derives target names from `${DIR_NAME}` and wires up baseline paths and run targets.
 
 ```cmake
 cmake_path(GET CMAKE_CURRENT_LIST_DIR FILENAME DIR_NAME)
@@ -35,34 +35,59 @@ add_executable(${DIR_NAME} ${DIR_NAME}.cpp)
 include(${CMAKE_BINARY_DIR}/target_properties.cmake)
 include(${CMAKE_BINARY_DIR}/target_compile_options.cmake)
 
+target_compile_definitions(${DIR_NAME} PRIVATE
+        COMPONENT_BASELINE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/baseline.json"
+        COMPONENT_REPORT_PATH="${PROJECT_SOURCE_DIR}/production_artifacts/profiling/${COMPONENT_NAME}_score_report.md"
+)
+
 target_link_libraries(${DIR_NAME}
         PRIVATE
         ${PROJECT_NAME}::${COMPONENT_NAME}
         ${PROJECT_NAME}::perf_scope
 )
+
+add_test(NAME ${DIR_NAME} COMMAND ${DIR_NAME})
+
+add_custom_target(${DIR_NAME}_run
+        COMMAND $<TARGET_FILE:${DIR_NAME}>
+        DEPENDS ${DIR_NAME}
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        COMMENT "Running component benchmark ${DIR_NAME} and evaluating against baseline.json"
+        VERBATIM
+)
 ```
 
-Because `tbb_algosBENCH` links only `tbb_algos` and `perf_scope`, the benchmark binary avoids database setup and application startup clutter. And because measurement happens inside the benchmark harness rather than inside `tbb_algos.cpp`, production component sources remain free of profiler macros.
+Because `tbb_algosBENCH` links only `tbb_algos` and `perf_scope`, the benchmark binary runs without application startup overhead. Measurement happens entirely inside the harness, leaving production component sources free of profiler hooks.
 
-## Isolated hardware counters in perf_scope
+Notice that the benchmark binary is also registered with `add_test()`. Running `ctest` executes the benchmark as a regression verification step.
 
-The `targets/perf_scope/` component wraps the Linux kernel `<linux/perf_event.h>` subsystem via the `perf_event_open` system call inside an RAII guard named `perf_scope::counter_guard`.
+## Hardware counters in perf_scope
 
-When `perf_scope::measure_workload()` runs a component function, it executes a warmup pass to prime instruction and data caches, resets and enables the hardware PMU counter group immediately before the timed loop, and disables the counter group as soon as the loop finishes.
+The `targets/perf_scope/` component wraps `<linux/perf_event.h>` using the `perf_event_open` system call inside an RAII guard named `perf_scope::counter_guard`.
+
+When `perf_scope::measure_workload()` executes a workload, it runs a warmup iteration to prime instruction and data caches. It resets and enables the hardware PMU counter group immediately before the timed loop, and disables the counter group when the loop finishes.
 
 It captures core timing and hardware metrics per operation.
 
-* **Wall clock nanoseconds per operation.** Recorded in `wall_ns_per_op` via `std::chrono::steady_clock`.
+* **Wall clock nanoseconds per operation.** Recorded in `wall_ns_per_op` through `std::chrono::steady_clock`.
 * **CPU cycles per operation.** Recorded in `cycles_per_op` from `PERF_COUNT_HW_CPU_CYCLES`.
 * **Retired instructions per operation.** Recorded in `instructions_per_op` from `PERF_COUNT_HW_INSTRUCTIONS`.
 * **Instructions per cycle.** Recorded in `ipc` as the ratio of retired instructions to CPU cycles.
 * **Branch and cache misses.** Recorded in `branch_misses_per_op` and `cache_misses_per_op` from `PERF_COUNT_HW_BRANCH_MISSES` and `PERF_COUNT_HW_CACHE_MISSES`.
 
-If the host Linux kernel restricts hardware PMU access when `perf_event_paranoid > 1`, `perf_scope` falls back to `steady_clock` timing without failing the build or test suite.
+### Kernel permissions and fallback timing
+
+On Linux systems where `/proc/sys/kernel/perf_event_paranoid` is set above 1, unprivileged processes cannot open hardware PMU counters. In that scenario `perf_scope` logs an operational warning and falls back to `std::chrono::steady_clock` timing without failing the benchmark run or test suite.
+
+To allow unprivileged hardware counter access on developer workstations, set the sysctl value.
+
+```bash
+sudo sysctl kernel.perf_event_paranoid=1
+```
 
 ## Birth baseline and score driven optimization
 
-Unbounded performance optimization wastes engineering time and AI agent context tokens when a component is already fast enough for its role. To keep optimization bounded, each `<name>BENCH/` directory stores a component birth baseline in `baseline.json`.
+Unbounded optimization consumes engineering effort when a component is already fast enough for its purpose. To keep optimization bounded, each `<name>BENCH/` target stores a birth baseline in `baseline.json`.
 
 ```json
 {
@@ -80,30 +105,35 @@ Unbounded performance optimization wastes engineering time and AI agent context 
 }
 ```
 
-### How default score, curve, and budget values are defined
+### Utility curves and stop conditions
 
-At the library level, `perf_scope::score_baseline` defines conservative fallback defaults in `perf_scope/perf_scope.hpp`.
+The evaluation engine computes a speedup factor by comparing current `wall_ns_per_op` with the birth baseline. That speedup maps to a delta score using the chosen utility curve.
 
-* **`human_baseline_score` defaults to `5.0`.** Places an unreviewed component at the midpoint of the 1.0 to 10.0 scale.
-* **`target_score` defaults to `8.0`.** Requires a meaningful speedup before signaling that optimization can stop.
-* **`token_budget` defaults to `4000`.** Caps automated agent optimization effort to a couple of focused passes.
-* **`utility_curve` defaults to `logarithmic`.** Awards $+2.0$ score points for each $2\times$ speedup via $\Delta = 2.0 \log_2(\text{speedup})$ so early gains score well while extreme micro optimizations taper off. The evaluator also supports `diminishing_returns` for steeper early tapering and `linear` where every speedup increment scales evenly.
+* **Logarithmic curve.** Awards 2.0 score points for each doubling of performance via $\Delta = 2.0 \cdot \log_2(\text{speedup})$. Early gains score well while extreme micro optimizations yield diminishing returns.
+* **Diminishing returns curve.** Applies a steeper square root decay for components where only initial algorithmic wins matter.
+* **Linear curve.** Scales score points proportionally with speedup. Useful on core bottleneck components where every percentage gain translates directly to system throughput.
 
-### Agent baseline estimation versus human review
+Optimization halts when current score reaches `target_score`, or when the projected score gain for another 20 percent speedup drops below 0.25 points.
 
-When an AI agent creates a new component and its `<name>BENCH/` target, `perf_scope::load_or_create_baseline()` measures the component's initial hardware counters on first run and writes `baseline.json`. Rather than leaving policy fields empty, the agent populates initial values in `<name>BENCH.cpp` by evaluating the implementation structure alongside the measured hardware counters.
+### Baseline creation on first run
 
-* **Initial score estimation.** If the birth implementation uses naive scalar loops, frequent heap allocations, or exhibits low `ipc` and high cache or branch misses, the agent estimates a lower starting `human_baseline_score` around `4.0` to `5.0` because substantial optimization headroom exists. If the component already uses parallel primitives and contiguous memory with high instruction throughput, such as `tbb_algos` starting with `oneapi::tbb::parallel_for_each` and `ipc` above `2.0`, the agent sets a higher initial score such as `6.0`.
-* **Curve and target selection.** For general compute components, the agent selects `logarithmic` and a `target_score` between `8.0` and `8.5` with a `4000` token budget.
+When a new benchmark runs for the first time without an existing `baseline.json`, `perf_scope::load_or_create_baseline()` measures the initial hardware counters and serializes `baseline.json` automatically using the `score_baseline` struct provided by `main()`.
 
-Understanding this estimation logic helps a human developer decide when to trust the agent's defaults and when to intervene.
+```cpp
+ps::score_baseline default_birth{};
+default_birth.component = "tbb_algos";
+default_birth.human_baseline_score = 6.0;
+default_birth.target_score = 8.5;
+default_birth.token_budget = 4000U;
+default_birth.curve = ps::utility_curve::logarithmic;
+default_birth.birth_metrics = current_metrics;
+```
 
-* **When to trust the defaults.** If the component is a standard workload and the agent's hardware counter assessment matches expectations, the developer can leave `baseline.json` untouched. The default curve and budget prevent runaway optimization while still capturing straightforward algorithmic speedups.
-* **When to override `baseline.json`.** Because the agent only sees local hardware counters and code structure, it does not always know business criticality. If a human knows a component sits on a system bottleneck where even a $15\%$ gain matters, the human should not rely on the default stop threshold. Instead, the developer can lower `human_baseline_score`, raise `target_score`, switch `utility_curve` to `linear`, or raise `token_budget` to direct deeper loop optimization. Conversely, if the component runs once at startup, the human can set `human_baseline_score` equal to `target_score` so no optimization effort is spent.
+Commit `baseline.json` alongside the benchmark source code. Future benchmark runs compare against this committed snapshot.
 
-### Compact feedback loop for optimization runs
+### Executing benchmarks and reading reports
 
-Running the benchmark target executes the workload, compares current metrics against `baseline.json`, and writes a markdown report to both the console and `production_artifacts/profiling/<name>_score_report.md`.
+Run the dedicated CMake benchmark target to measure the workload and print the score report.
 
 ```bash
 cmake --build --preset GNU_Custom_Release --target tbb_algosBENCH_run
@@ -118,13 +148,13 @@ cmake --build --preset GNU_Custom_Release --target tbb_algosBENCH_run
 - Workflow decision:    continue_optimizing (marginal gain for +20% speedup: +0.53 pts)
 ```
 
-Once the achieved score reaches `target_score`, or when the projected score gain for another $20\%$ speedup drops below `0.25` points, the report outputs `target_score_reached` or `stop_diminishing_returns`.
+The report is written to stdout and saved to `production_artifacts/profiling/<name>_score_report.md`.
 
-## Whole application Linux perf reports
+## Whole application profiling with Linux perf
 
-When you want to profile the full `app` executable across all components or inspect assembly instructions, `cmake/perf.cmake` provides non interactive CMake targets that write plain text reports to `production_artifacts/profiling/perf/`.
+When you need to profile the entire application across all components or inspect disassembled assembly instructions, `cmake/perf.cmake` provides CMake targets that write reports to `production_artifacts/profiling/perf/`.
 
-* **`Perf_stat`.** Runs `perf stat` across hardware and scheduling counters and saves `perf_stat_report.txt`.
-* **`Perf_record`.** Records DWARF call graph samples via `perf record -g --call-graph dwarf -F 999` to `perf.data`.
-* **`Perf_report`.** Runs `perf report --stdio --no-children` to generate a plain text hotspot table in `perf_hotspot_report.txt` without blocking on an interactive terminal UI.
-* **`Perf_annotate`.** Runs `perf annotate --stdio -l` to write instruction level and source line cycle attribution to `perf_annotate_report.txt`.
+* **`Perf_stat`.** Runs `perf stat` across hardware and scheduling counters and writes `perf_stat_report.txt`.
+* **`Perf_record`.** Records DWARF call graph samples with `perf record -g --call-graph dwarf -F 999` to `perf.data`.
+* **`Perf_report`.** Runs `perf report --stdio --no-children` to generate a hotspot summary table in `perf_hotspot_report.txt`.
+* **`Perf_annotate`.** Runs `perf annotate --stdio -l` to write instruction level cycle attribution to `perf_annotate_report.txt`.
