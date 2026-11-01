@@ -17,6 +17,7 @@ target_sources(${DIR_NAME}
         ${DIR_NAME}/${DIR_NAME}.hpp
 )
 
+# Link GCC libstdc++ experimental library for std::stacktrace support
 target_link_libraries(${DIR_NAME}
         PRIVATE
         PkgConfig::libsystemd
