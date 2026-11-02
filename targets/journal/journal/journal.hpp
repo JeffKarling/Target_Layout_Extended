@@ -7,9 +7,13 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <optional>
+#include <ranges>
 #include <source_location>
 #include <span>
+#include <stdexcept>
+#include <string>
 #include <string_view>
 #include <type_traits>
 
@@ -27,6 +31,8 @@ namespace target_layout_extended::journal {
         debug     = 7U
     };
 
+    inline constexpr std::size_t k_severity_count = 8U;
+
     [[nodiscard]] constexpr auto to_syslog_priority(severity level) noexcept -> int {
         return static_cast<int>(level);
     }
@@ -38,6 +44,15 @@ namespace target_layout_extended::journal {
     inline constexpr std::size_t k_uuid_hex_length = 32U;
     inline constexpr std::size_t k_max_stacktrace_frames = 32U;
     inline constexpr std::size_t k_max_exception_reason_length = 255U;
+
+    inline constexpr std::size_t k_catalog_arity_1 = 1U;
+    inline constexpr std::size_t k_catalog_arity_2 = 2U;
+    inline constexpr std::size_t k_catalog_arity_3 = 3U;
+    inline constexpr std::size_t k_catalog_arity_4 = 4U;
+    inline constexpr std::size_t k_catalog_arity_5 = 5U;
+    inline constexpr std::size_t k_catalog_arity_6 = 6U;
+    inline constexpr std::size_t k_catalog_arity_7 = 7U;
+    inline constexpr std::size_t k_catalog_arity_8 = 8U;
 
     // Validates that a catalog MESSAGE_ID is a 32-character lowercase hexadecimal UUID string.
     [[nodiscard]] constexpr auto is_valid_message_id(std::string_view message_id) noexcept -> bool {
@@ -87,34 +102,36 @@ namespace target_layout_extended::journal {
             return false;
         } else {
             constexpr std::size_t count = catalog_entry_count_v<Catalog>;
-            if constexpr (count == 0U || (sizeof(std::remove_cvref_t<Catalog>) != count * sizeof(catalog_entry))) {
+            if constexpr (
+                count == 0U ||
+                count > k_catalog_arity_8 ||
+                (sizeof(std::remove_cvref_t<Catalog>) != count * sizeof(catalog_entry))
+            ) {
                 return false;
-            } else if constexpr (count == 1U) {
+            } else if constexpr (count == k_catalog_arity_1) {
                 auto const& [e1] = component_catalog;
                 return e1.is_valid();
-            } else if constexpr (count == 2U) {
+            } else if constexpr (count == k_catalog_arity_2) {
                 auto const& [e1, e2] = component_catalog;
                 return e1.is_valid() && e2.is_valid();
-            } else if constexpr (count == 3U) {
+            } else if constexpr (count == k_catalog_arity_3) {
                 auto const& [e1, e2, e3] = component_catalog;
                 return e1.is_valid() && e2.is_valid() && e3.is_valid();
-            } else if constexpr (count == 4U) {
+            } else if constexpr (count == k_catalog_arity_4) {
                 auto const& [e1, e2, e3, e4] = component_catalog;
                 return e1.is_valid() && e2.is_valid() && e3.is_valid() && e4.is_valid();
-            } else if constexpr (count == 5U) {
+            } else if constexpr (count == k_catalog_arity_5) {
                 auto const& [e1, e2, e3, e4, e5] = component_catalog;
                 return e1.is_valid() && e2.is_valid() && e3.is_valid() && e4.is_valid() && e5.is_valid();
-            } else if constexpr (count == 6U) {
+            } else if constexpr (count == k_catalog_arity_6) {
                 auto const& [e1, e2, e3, e4, e5, e6] = component_catalog;
                 return e1.is_valid() && e2.is_valid() && e3.is_valid() && e4.is_valid() && e5.is_valid() && e6.is_valid();
-            } else if constexpr (count == 7U) {
+            } else if constexpr (count == k_catalog_arity_7) {
                 auto const& [e1, e2, e3, e4, e5, e6, e7] = component_catalog;
                 return e1.is_valid() && e2.is_valid() && e3.is_valid() && e4.is_valid() && e5.is_valid() && e6.is_valid() && e7.is_valid();
-            } else if constexpr (count == 8U) {
+            } else {
                 auto const& [e1, e2, e3, e4, e5, e6, e7, e8] = component_catalog;
                 return e1.is_valid() && e2.is_valid() && e3.is_valid() && e4.is_valid() && e5.is_valid() && e6.is_valid() && e7.is_valid() && e8.is_valid();
-            } else {
-                return false;
             }
         }
     }
@@ -171,7 +188,7 @@ namespace target_layout_extended::journal {
         }
 
         auto start = pos + marker_len;
-        while (start < file_path.size() && (file_path[start] == '/' || file_path[start] == '\\')) {
+        while (start < file_path.size() && (file_path.at(start) == '/' || file_path.at(start) == '\\')) {
             ++start;
         }
         if (start >= file_path.size()) {
@@ -201,6 +218,12 @@ namespace target_layout_extended::journal {
     inline constexpr std::size_t k_policy_component_capacity = 32U;
     inline constexpr std::size_t k_policy_override_count = 4U;
     inline constexpr std::uint32_t k_max_stride = 1'000'000U;
+    inline constexpr std::uint8_t k_default_congestion_threshold_pct = 50U;
+    inline constexpr std::uint8_t k_max_percentage = 100U;
+    inline constexpr std::uint32_t k_default_congestion_info_stride = 16U;
+    inline constexpr std::uint16_t k_default_lookbehind_slots = 128U;
+    inline constexpr char k_ascii_del = static_cast<char>(0x7F);
+    inline constexpr std::chrono::milliseconds k_default_flush_timeout{1000};
 
     // Value based per component override of the debug stride. An empty component name marks an unused slot.
     // The fixed size character array keeps the struct free of pointers so an external control component
@@ -216,10 +239,8 @@ namespace target_layout_extended::journal {
     };
 
     [[nodiscard]] constexpr auto component_name(const component_override& entry) noexcept -> std::string_view {
-        std::size_t length = 0U;
-        while (length < entry.component.size() && entry.component.at(length) != '\0') {
-            ++length;
-        }
+        const auto* const end_it = std::ranges::find(entry.component, '\0');
+        auto const length = static_cast<std::size_t>(std::ranges::distance(entry.component.begin(), end_it));
         return {entry.component.data(), length};
     }
 
@@ -232,9 +253,7 @@ namespace target_layout_extended::journal {
             return std::nullopt;
         }
         component_override result{};
-        for (std::size_t idx = 0U; idx < name.size(); ++idx) {
-            result.component.at(idx) = name[idx];
-        }
+        std::ranges::copy(name, result.component.begin());
         result.debug_stride = debug_stride;
         return result;
     }
@@ -243,14 +262,14 @@ namespace target_layout_extended::journal {
     // Strides use 0 for ring only, 1 for always emit and N for every Nth record of that severity.
     // Records at or above the lookbehind trigger severity always emit and flush the recent history first.
     struct policy {
-        std::array<std::uint32_t, 8U> stride_by_level{1U, 1U, 1U, 1U, 1U, 1U, 1U, 0U};
+        std::array<std::uint32_t, k_severity_count> stride_by_level{1U, 1U, 1U, 1U, 1U, 1U, 1U, 0U};
 
         // When ring backlog exceeds this percentage notice and info records are thinned out.
-        std::uint8_t congestion_threshold_pct{50U};
-        std::uint32_t congestion_info_stride{16U};
+        std::uint8_t congestion_threshold_pct{k_default_congestion_threshold_pct};
+        std::uint32_t congestion_info_stride{k_default_congestion_info_stride};
 
         severity lookbehind_trigger{severity::error};
-        std::uint16_t lookbehind_slots{128U};
+        std::uint16_t lookbehind_slots{k_default_lookbehind_slots};
 
         std::array<component_override, k_policy_override_count> overrides{};
 
@@ -265,22 +284,21 @@ namespace target_layout_extended::journal {
         if (name.size() >= k_policy_component_capacity) {
             return false;
         }
-        for (char const character : name) {
-            if (character <= ' ' || character == '/' || character == '\\' || character == static_cast<char>(0x7F)) {
-                return false;
-            }
-        }
-        return true;
+        return std::ranges::all_of(name, [](char const character) noexcept {
+            return character > ' ' && character != '/' && character != '\\' && character != k_ascii_del;
+        });
     }
 
     // Validates a policy before activation so a control component can reject bad external input.
     [[nodiscard]] constexpr auto is_valid_policy(const policy& candidate) noexcept -> bool {
-        for (std::uint32_t const stride : candidate.stride_by_level) {
-            if (stride > k_max_stride) {
-                return false;
-            }
+        bool const strides_ok = std::ranges::all_of(
+            candidate.stride_by_level,
+            [](std::uint32_t const stride) noexcept { return stride <= k_max_stride; }
+        );
+        if (!strides_ok) {
+            return false;
         }
-        if (candidate.congestion_threshold_pct > 100U) {
+        if (candidate.congestion_threshold_pct > k_max_percentage) {
             return false;
         }
         if (candidate.congestion_info_stride > k_max_stride) {
@@ -292,17 +310,12 @@ namespace target_layout_extended::journal {
         if (candidate.lookbehind_slots > k_ring_capacity) {
             return false;
         }
-        for (component_override const& entry : candidate.overrides) {
-            if (!is_valid_component_override(entry)) {
-                return false;
-            }
-        }
-        return true;
+        return std::ranges::all_of(candidate.overrides, is_valid_component_override);
     }
 
     static_assert(is_valid_policy(policy{}));
     static_assert(policy{}.stride_by_level.at(static_cast<std::size_t>(severity::debug)) == 0U);
-    static_assert(!is_valid_policy(policy{.congestion_threshold_pct = 101U}));
+    static_assert(!is_valid_policy(policy{.congestion_threshold_pct = k_max_percentage + 1U}));
 
     // Atomically replaces the active consumer policy. Returns false and keeps the previous policy when the
     // candidate fails is_valid_policy. The last caller wins and no access control is applied.
@@ -316,7 +329,7 @@ namespace target_layout_extended::journal {
 
     // Blocks until every record submitted before the call has been processed by the consumer or the
     // timeout expires. Returns true when the consumer caught up. Intended for shutdown and tests.
-    [[nodiscard]] auto flush(std::chrono::milliseconds timeout = std::chrono::milliseconds{1000}) noexcept -> bool;
+    [[nodiscard]] auto flush(std::chrono::milliseconds timeout = k_default_flush_timeout) noexcept -> bool;
 
     // Cumulative counters for health monitoring by an external control component.
     struct statistics {
@@ -358,9 +371,9 @@ namespace target_layout_extended::journal {
     // Canonical internal log descriptor assembled at compile time from variadic strong log attributes.
     struct log_record {
         severity level{severity::info};
-        std::string_view text{};
-        std::span<const std::byte> binary{};
-        std::source_location location{};
+        std::string_view text;
+        std::span<const std::byte> binary;
+        std::source_location location;
     };
 
     namespace detail {
@@ -379,11 +392,11 @@ namespace target_layout_extended::journal {
             rec.level = level;
         }
 
-        constexpr void assign_log_attribute(log_record& rec, message msg) noexcept {
+        constexpr void assign_log_attribute(log_record& rec, const message& msg) noexcept {
             rec.text = msg.text;
         }
 
-        constexpr void assign_log_attribute(log_record& rec, binary_payload payload) noexcept {
+        constexpr void assign_log_attribute(log_record& rec, const binary_payload& payload) noexcept {
             rec.binary = payload.bytes;
         }
 
@@ -397,11 +410,11 @@ namespace target_layout_extended::journal {
         // the duration of the callback.
         struct emitted_record {
             severity level{severity::info};
-            std::string_view component{};
-            std::string_view text{};
-            std::span<const std::byte> binary{};
+            std::string_view component;
+            std::string_view text;
+            std::span<const std::byte> binary;
             const catalog_entry* entry{nullptr};
-            std::string_view label{};
+            std::string_view label;
             const char* file{nullptr};
             const char* function{nullptr};
             std::uint32_t line{0U};
@@ -457,7 +470,8 @@ namespace target_layout_extended::journal {
         std::source_location location,
         const Args&... args
     ) noexcept -> log_record {
-        log_record record{.location = location};
+        log_record record{};
+        record.location = location;
         (detail::assign_log_attribute(record, args), ...);
         return record;
     }
@@ -479,7 +493,7 @@ namespace target_layout_extended::journal {
     log(const Args&...) -> log<Args...>;
 
     // Exception carrier thrown by internal component code to select a specific boundary catalog_entry
-    // and freeze the binary std::stacktrace at the exact throw point before stack unwinding begins.
+    // and freeze the binary stacktrace at the exact throw point before stack unwinding begins.
     class catalog_exception final {
     public:
         constexpr explicit catalog_exception(
@@ -489,11 +503,8 @@ namespace target_layout_extended::journal {
         ) noexcept
             : _entry(&specific_entry),
               _location(throw_location) {
-            std::size_t const copy_len =
-                reason.size() < k_max_exception_reason_length ? reason.size() : k_max_exception_reason_length;
-            for (std::size_t idx = 0U; idx < copy_len; ++idx) {
-                _reason.at(idx) = reason.at(idx);
-            }
+            std::size_t const copy_len = std::min(reason.size(), k_max_exception_reason_length);
+            std::ranges::copy(reason.substr(0U, copy_len), _reason.begin());
             _reason.at(copy_len) = '\0';
             _reason_len = copy_len;
 
@@ -537,7 +548,7 @@ namespace target_layout_extended::journal {
 
     // Lippincott function to be called inside a catch (...) block at a component's noexcept boundary.
     // Rethrows the active exception internally, selects either the thrown catalog_exception entry or
-    // the mandatory default_entry, attaches a raw binary std::stacktrace payload via sd_journal_sendv,
+    // the mandatory default_entry, enqueues a binary stacktrace payload for systemd-journald,
     // and returns false so the boundary can return an error status without leaking exceptions.
     [[nodiscard]] auto catch_boundary_exception(
         const catalog_entry& default_entry,

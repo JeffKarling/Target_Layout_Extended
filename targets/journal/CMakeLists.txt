@@ -9,6 +9,8 @@ include(${CMAKE_BINARY_DIR}/target_compile_options.cmake)
 target_sources(${DIR_NAME}
         PRIVATE
         ${DIR_NAME}.cpp
+        journal_sink.cpp
+        journal_boundary.cpp
 
         PUBLIC
         FILE_SET ${DIR_NAME}

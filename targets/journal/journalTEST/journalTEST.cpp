@@ -1,5 +1,11 @@
 #include <gtest/gtest.h>
 #include <journal/journal.hpp>
+#include <link.h>
+#include <pthread.h>
+#include <sched.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <chrono>
@@ -8,18 +14,20 @@
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <initializer_list>
 #include <map>
 #include <memory>
-#include <link.h>
-#include <sys/syscall.h>
-#include <unistd.h>
+#include <optional>
 #include <source_location>
 #include <span>
 #include <sstream>
 #include <stdexcept>
+#include <stop_token>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <thread>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -368,6 +376,8 @@ namespace {
         [[nodiscard]] auto blocked() const -> bool { return entered_.load(); }
 
         std::vector<captured_record> records;
+        int consumer_scheduler{-1};
+        std::string consumer_thread_name;
 
     private:
         static void on_record(void* context, const jrn::detail::emitted_record& record) noexcept {
@@ -377,6 +387,13 @@ namespace {
                 std::this_thread::sleep_for(100us);
             }
             self->entered_.store(false);
+            if (self->consumer_scheduler < 0) {
+                self->consumer_scheduler = ::sched_getscheduler(0);
+                std::array<char, 16U> name{};
+                if (::pthread_getname_np(::pthread_self(), name.data(), name.size()) == 0) {
+                    self->consumer_thread_name = name.data();
+                }
+            }
             captured_record item;
             item.level = record.level;
             item.component = std::string(record.component);
@@ -422,10 +439,8 @@ namespace {
         }
 
         [[nodiscard]] static auto texts(const std::vector<captured_record>& records) -> std::vector<std::string> {
-            std::vector<std::string> result;
-            for (auto const& item : records) {
-                result.push_back(item.text);
-            }
+            std::vector<std::string> result(records.size());
+            std::ranges::transform(records, result.begin(), &captured_record::text);
             return result;
         }
 
@@ -523,37 +538,33 @@ TEST(PolicyDefaultsTest, InvalidActivationKeepsPreviousPolicy) {
 
 TEST(PolicyDefaultsTest, ConcurrentActivationsNeverExposeATornPolicy) {
     jrn::reset_default_policy();
-    std::atomic<bool> stop{false};
     std::atomic<bool> torn{false};
 
-    std::vector<std::thread> writers;
-    for (std::uint32_t id = 1U; id <= 4U; ++id) {
-        writers.emplace_back([id, &stop]() {
-            jrn::policy candidate{};
-            candidate.stride_by_level.fill(id);
-            candidate.lookbehind_slots = static_cast<std::uint16_t>(id);
-            candidate.congestion_info_stride = id;
-            while (!stop.load()) {
-                (void)jrn::activate_policy(candidate);
+    {
+        std::vector<std::jthread> writers;
+        for (std::uint32_t id = 1U; id <= 4U; ++id) {
+            writers.emplace_back([id](const std::stop_token& stop_token) {
+                jrn::policy candidate{};
+                candidate.stride_by_level.fill(id);
+                candidate.lookbehind_slots = static_cast<std::uint16_t>(id);
+                candidate.congestion_info_stride = id;
+                while (!stop_token.stop_requested()) {
+                    (void)jrn::activate_policy(candidate);
+                }
+            });
+        }
+        std::jthread const reader([&]() {
+            for (int round = 0; round < 20000; ++round) {
+                jrn::policy const snapshot = jrn::active_policy();
+                std::uint32_t const marker = snapshot.stride_by_level.at(0U);
+                bool const consistent = snapshot.stride_by_level.at(7U) == marker &&
+                                        snapshot.lookbehind_slots == marker &&
+                                        snapshot.congestion_info_stride == marker;
+                if (!consistent && snapshot != jrn::policy{}) {
+                    torn.store(true);
+                }
             }
         });
-    }
-    std::thread reader([&]() {
-        for (int round = 0; round < 20000; ++round) {
-            jrn::policy const snapshot = jrn::active_policy();
-            std::uint32_t const marker = snapshot.stride_by_level.at(0U);
-            bool const consistent = snapshot.stride_by_level.at(7U) == marker &&
-                                    snapshot.lookbehind_slots == marker &&
-                                    snapshot.congestion_info_stride == marker;
-            if (!consistent && snapshot != jrn::policy{}) {
-                torn.store(true);
-            }
-        }
-    });
-    reader.join();
-    stop.store(true);
-    for (auto& writer : writers) {
-        writer.join();
     }
     EXPECT_FALSE(torn.load());
     jrn::reset_default_policy();
@@ -753,22 +764,23 @@ TEST_F(PolicyTest, RecordsCarrySequenceTimestampThreadAndComponent) {
     EXPECT_LE(records.at(0U).monotonic_ns, records.at(1U).monotonic_ns);
     EXPECT_GT(records.at(0U).monotonic_ns, 0U);
     EXPECT_EQ(records.at(0U).thread_id, static_cast<std::uint32_t>(::syscall(SYS_gettid)));
+    EXPECT_EQ(sink->consumer_scheduler, SCHED_BATCH);
+    EXPECT_EQ(sink->consumer_thread_name, "journal-consume");
 }
 
 TEST_F(PolicyTest, SequenceOrderIsTotalAcrossProducerThreads) {
     jrn::policy custom{};
     custom.stride_by_level.at(7U) = 1U;
     ASSERT_TRUE(jrn::activate_policy(custom));
-    std::vector<std::thread> producers;
-    for (int id = 0; id < 4; ++id) {
-        producers.emplace_back([]() {
-            for (int idx = 0; idx < 200; ++idx) {
-                log_text(jrn::severity::debug, "threaded");
-            }
-        });
-    }
-    for (auto& producer : producers) {
-        producer.join();
+    {
+        std::vector<std::jthread> producers;
+        for (int id = 0; id < 4; ++id) {
+            producers.emplace_back([]() {
+                for (int idx = 0; idx < 200; ++idx) {
+                    log_text(jrn::severity::debug, "threaded");
+                }
+            });
+        }
     }
     auto& records = drained();
     ASSERT_EQ(records.size(), 800U);
