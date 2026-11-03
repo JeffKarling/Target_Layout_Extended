@@ -24,9 +24,11 @@ namespace target_layout_extended::journal {
             }
             int const captured = ::backtrace(raw.data(), static_cast<int>(wanted));
             std::size_t const count = captured > 0 ? static_cast<std::size_t>(captured) : 0U;
-            for (std::size_t idx = 0U; idx < count; ++idx) {
-                frame_buffer.subspan(idx).front() = std::bit_cast<std::uintptr_t>(raw.at(idx));
-            }
+            std::ranges::transform(
+                std::span{raw}.first(count),
+                frame_buffer.begin(),
+                [](void* addr) noexcept { return std::bit_cast<std::uintptr_t>(addr); }
+            );
             return count;
         }
 

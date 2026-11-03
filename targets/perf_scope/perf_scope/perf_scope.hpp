@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <ranges>
 #include <string>
 #include <string_view>
 
@@ -91,7 +92,7 @@ namespace target_layout_extended::perf_scope {
             workload();
 
             counter_guard guard;
-            for (std::size_t i = 0U; i < count; ++i) {
+            for ([[maybe_unused]] std::size_t const i : std::views::iota(std::size_t{0U}, count)) {
                 workload();
             }
             return guard.stop(count);

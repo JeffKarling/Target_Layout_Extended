@@ -153,12 +153,9 @@ namespace target_layout_extended::database_manager {
     auto database_store::get_all_items() const noexcept -> std::vector<Item> {
         try {
             std::scoped_lock const lock(_db_mutex);
-            std::vector<Item> result;
-            result.reserve(static_cast<std::size_t>(_database.items_size()));
-            for (int i = 0; i < _database.items_size(); ++i) {
-                result.push_back(_database.items(i));
-            }
-            return result;
+            return std::ranges::to<std::vector<Item>>(
+                std::ranges::subrange(_database.items().begin(), _database.items().end())
+            );
         } catch (...) {
             (void)journal::catch_boundary_exception(k_catalog.k_load_failed);
             return {};

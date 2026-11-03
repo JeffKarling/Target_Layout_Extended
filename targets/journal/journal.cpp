@@ -15,6 +15,7 @@
 #include <cstring>
 #include <memory>
 #include <mutex>
+#include <ranges>
 #include <span>
 #include <stop_token>
 #include <string_view>
@@ -221,11 +222,11 @@ namespace target_layout_extended::journal {
 
         void store_bytes(std::span<std::uint64_t> destination, std::span<const std::byte> source) noexcept {
             std::size_t const full_words = source.size() / sizeof(std::uint64_t);
-            for (std::size_t idx = 0U; idx < full_words; ++idx) {
+            for (auto const [idx, dest_word] : std::views::enumerate(destination.first(full_words))) {
                 std::uint64_t word = 0U;
-                auto const chunk = source.subspan(idx * sizeof(std::uint64_t), sizeof(std::uint64_t));
+                auto const chunk = source.subspan(static_cast<std::size_t>(idx) * sizeof(std::uint64_t), sizeof(std::uint64_t));
                 std::memcpy(&word, chunk.data(), sizeof(word));
-                store_word(destination.subspan(idx).front(), word);
+                store_word(dest_word, word);
             }
             std::size_t const tail = source.size() % sizeof(std::uint64_t);
             if (tail != 0U) {
@@ -239,9 +240,9 @@ namespace target_layout_extended::journal {
         void load_bytes(std::span<std::byte> destination, std::span<std::uint64_t> source, std::size_t length) noexcept {
             std::size_t const clamped = std::min(length, destination.size());
             std::size_t const full_words = clamped / sizeof(std::uint64_t);
-            for (std::size_t idx = 0U; idx < full_words; ++idx) {
-                std::uint64_t const word = load_word(source.subspan(idx).front());
-                auto const chunk = destination.subspan(idx * sizeof(std::uint64_t), sizeof(std::uint64_t));
+            for (auto const [idx, src_word] : std::views::enumerate(source.first(full_words))) {
+                std::uint64_t const word = load_word(src_word);
+                auto const chunk = destination.subspan(static_cast<std::size_t>(idx) * sizeof(std::uint64_t), sizeof(std::uint64_t));
                 std::memcpy(chunk.data(), &word, sizeof(word));
             }
             std::size_t const tail = clamped % sizeof(std::uint64_t);
@@ -334,9 +335,7 @@ namespace target_layout_extended::journal {
 
             auto const words = slot_span(index);
             std::array<std::uint64_t, k_base_header_words> base_words{};
-            for (std::size_t idx = 0U; idx < k_base_header_words; ++idx) {
-                base_words.at(idx) = load_word(words.subspan(idx).front());
-            }
+            std::ranges::transform(words.first(k_base_header_words), base_words.begin(), load_word);
             out.base = std::bit_cast<slot_base_header>(base_words);
             out.base.text_len = static_cast<std::uint16_t>(
                 std::min<std::size_t>(out.base.text_len, k_max_message_bytes));
@@ -345,9 +344,11 @@ namespace target_layout_extended::journal {
 
             if (out.base.has_entry != 0U) {
                 std::array<std::uint64_t, k_catalog_header_words> cat_words{};
-                for (std::size_t idx = 0U; idx < k_catalog_header_words; ++idx) {
-                    cat_words.at(idx) = load_word(words.subspan(k_base_header_words + idx).front());
-                }
+                std::ranges::transform(
+                    words.subspan(k_base_header_words, k_catalog_header_words),
+                    cat_words.begin(),
+                    load_word
+                );
                 out.catalog = std::bit_cast<slot_catalog_header>(cat_words);
             } else {
                 out.catalog = {};
@@ -521,12 +522,11 @@ namespace target_layout_extended::journal {
 
             if (level_index == static_cast<std::size_t>(severity::debug) && cons.active_has_overrides) {
                 std::string_view const comp = header_component(header);
-                for (std::size_t slot = 0U; slot < active.overrides.size(); ++slot) {
-                    auto const& entry = active.overrides.at(slot);
+                for (auto const [slot, entry] : std::views::enumerate(active.overrides)) {
                     auto const name = component_name(entry);
                     if (!name.empty() && name == comp) {
                         stride = entry.debug_stride;
-                        counter = &cons.override_counters.at(slot);
+                        counter = &cons.override_counters.at(static_cast<std::size_t>(slot));
                         break;
                     }
                 }
@@ -564,7 +564,7 @@ namespace target_layout_extended::journal {
             if (pos.head > k_ring_capacity) {
                 first = std::max(first, pos.head - k_ring_capacity);
             }
-            for (std::uint64_t past = first; past < pos.index; ++past) {
+            for (std::uint64_t const past : std::views::iota(first, pos.index)) {
                 if (ctx.consumer.emitted_at.at(static_cast<std::size_t>(past & k_ring_mask)) == past + 1U) {
                     continue;
                 }
@@ -607,7 +607,7 @@ namespace target_layout_extended::journal {
 
         [[nodiscard]] auto wait_for_slot_header(std::uint64_t index, decoded_header& out) noexcept -> read_state {
             std::chrono::steady_clock::time_point started{};
-            for (;;) {
+            while (true) {
                 read_state const result = read_slot_header(index, out);
                 if (result != read_state::not_ready) {
                     return result;
@@ -627,7 +627,10 @@ namespace target_layout_extended::journal {
             consumer_buffers& buffers
         ) noexcept {
             auto& ctx = state();
-            for (unsigned batch = 0U; batch < k_consumer_batch_limit && ctx.consumer.cursor < head; ++batch) {
+            for ([[maybe_unused]] unsigned const batch : std::views::iota(0U, k_consumer_batch_limit)) {
+                if (ctx.consumer.cursor >= head) {
+                    break;
+                }
                 std::uint64_t index = ctx.consumer.cursor;
                 if (head - index > k_ring_capacity) {
                     std::uint64_t const skipped = (head - k_ring_capacity) - index;
@@ -651,7 +654,7 @@ namespace target_layout_extended::journal {
             ctx.timestamps.calibrate();
             unsigned idle_rounds = 0U;
             auto buffers = std::make_unique_for_overwrite<consumer_buffers>();
-            for (;;) {
+            while (true) {
                 std::uint64_t const head = ctx.ring.head.load(std::memory_order_acquire);
                 if (ctx.consumer.cursor == head) {
                     if (stop_token.stop_requested()) {
@@ -794,8 +797,8 @@ namespace target_layout_extended::journal {
 
             auto const words = slot_span(index);
             auto const base_words = std::bit_cast<std::array<std::uint64_t, k_base_header_words>>(base);
-            for (std::size_t idx = 0U; idx < k_base_header_words; ++idx) {
-                store_word(words.subspan(idx).front(), base_words.at(idx));
+            for (auto const [idx, word] : std::views::enumerate(base_words)) {
+                store_word(words.subspan(static_cast<std::size_t>(idx)).front(), word);
             }
 
             std::size_t payload_offset = k_base_header_words;
@@ -811,8 +814,8 @@ namespace target_layout_extended::journal {
                 cat.component_len = static_cast<std::uint8_t>(std::min(entry.entry->component.size(), k_max_u8_len));
 
                 auto const cat_words = std::bit_cast<std::array<std::uint64_t, k_catalog_header_words>>(cat);
-                for (std::size_t idx = 0U; idx < k_catalog_header_words; ++idx) {
-                    store_word(words.subspan(payload_offset + idx).front(), cat_words.at(idx));
+                for (auto const [idx, word] : std::views::enumerate(cat_words)) {
+                    store_word(words.subspan(payload_offset + static_cast<std::size_t>(idx)).front(), word);
                 }
                 payload_offset += k_catalog_header_words;
             }

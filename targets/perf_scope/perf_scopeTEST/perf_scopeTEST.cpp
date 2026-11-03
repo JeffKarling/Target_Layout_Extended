@@ -1,8 +1,9 @@
 #include <gtest/gtest.h>
 #include <perf_scope/perf_scope.hpp>
+#include <algorithm>
 #include <filesystem>
 #include <functional>
-#include <numeric>
+#include <ranges>
 #include <string>
 #include <system_error>
 #include <vector>
@@ -12,7 +13,7 @@ namespace ps = target_layout_extended::perf_scope;
 TEST(PerfScopeTest, MeasuresHotWorkloadMetrics) {
     std::vector<int> values(1024U, 3);
     auto const metrics = ps::measure_workload(10U, [&values]() {
-        int sum = std::accumulate(values.begin(), values.end(), 0);
+        int const sum = std::ranges::fold_left(values, 0, std::plus<>{});
         values[0] = (sum > 0) ? 3 : 1;
     });
     EXPECT_GT(metrics.wall_ns_per_op, 0.0);
@@ -21,7 +22,7 @@ TEST(PerfScopeTest, MeasuresHotWorkloadMetrics) {
 TEST(PerfScopeTest, CounterGuardStartsOnConstruction) {
     ps::counter_guard guard;
     volatile int dummy = 0;
-    for (int i = 0; i < 1000; ++i) {
+    for (int const i : std::views::iota(0, 1000)) {
         dummy += i;
     }
     (void)dummy;

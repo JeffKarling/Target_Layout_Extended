@@ -18,6 +18,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <source_location>
 #include <span>
 #include <sstream>
@@ -316,8 +317,7 @@ TEST(JournalTest, SymbolizesBinaryStacktraceAddressesUsingAddr2line) {
     std::uintptr_t const base_address = get_main_executable_base_address();
     std::string symbolized_trace;
 
-    for (std::size_t idx = 0U; idx < frames.size(); ++idx) {
-        std::uintptr_t const frame_addr = frames[idx];
+    for (std::uintptr_t const frame_addr : frames) {
         std::uintptr_t const offset = (base_address != 0U) ? (frame_addr - base_address) : frame_addr;
 
         std::stringstream cmd;
@@ -458,8 +458,8 @@ namespace {
 
 TEST(PolicyDefaultsTest, DefaultPolicyIsTheFlightRecorderPolicy) {
     jrn::policy const defaults{};
-    for (std::size_t level = 0U; level < 7U; ++level) {
-        EXPECT_EQ(defaults.stride_by_level.at(level), 1U);
+    for (std::uint32_t const stride : std::span{defaults.stride_by_level}.first(7U)) {
+        EXPECT_EQ(stride, 1U);
     }
     EXPECT_EQ(defaults.stride_by_level.at(7U), 0U);
     EXPECT_EQ(defaults.congestion_threshold_pct, 50U);
@@ -542,7 +542,7 @@ TEST(PolicyDefaultsTest, ConcurrentActivationsNeverExposeATornPolicy) {
 
     {
         std::vector<std::jthread> writers;
-        for (std::uint32_t id = 1U; id <= 4U; ++id) {
+        for (std::uint32_t const id : std::views::iota(1U, 5U)) {
             writers.emplace_back([id](const std::stop_token& stop_token) {
                 jrn::policy candidate{};
                 candidate.stride_by_level.fill(id);
@@ -554,7 +554,7 @@ TEST(PolicyDefaultsTest, ConcurrentActivationsNeverExposeATornPolicy) {
             });
         }
         std::jthread const reader([&]() {
-            for (int round = 0; round < 20000; ++round) {
+            for ([[maybe_unused]] int const round : std::views::iota(0, 20000)) {
                 jrn::policy const snapshot = jrn::active_policy();
                 std::uint32_t const marker = snapshot.stride_by_level.at(0U);
                 bool const consistent = snapshot.stride_by_level.at(7U) == marker &&
@@ -584,7 +584,7 @@ TEST_F(PolicyTest, EveryNthStrideEmitsEveryNthRecordStartingAtActivation) {
     jrn::policy custom{};
     custom.stride_by_level.at(6U) = 3U;
     ASSERT_TRUE(jrn::activate_policy(custom));
-    for (int idx = 0; idx < 9; ++idx) {
+    for (int const idx : std::views::iota(0, 9)) {
         log_text(jrn::severity::info, "tick " + std::to_string(idx));
     }
     EXPECT_EQ(texts(drained()), (std::vector<std::string>{"tick 0", "tick 3", "tick 6"}));
@@ -640,7 +640,7 @@ TEST_F(PolicyTest, LookbehindWindowIsBoundedBySlots) {
     jrn::policy custom{};
     custom.lookbehind_slots = 2U;
     ASSERT_TRUE(jrn::activate_policy(custom));
-    for (int idx = 0; idx < 5; ++idx) {
+    for (int const idx : std::views::iota(0, 5)) {
         log_text(jrn::severity::debug, "d" + std::to_string(idx));
     }
     log_text(jrn::severity::error, "fault");
@@ -694,7 +694,7 @@ TEST_F(PolicyTest, ComponentOverrideStrideThinsDebugTraffic) {
     jrn::policy microscope{};
     microscope.overrides.at(0U) = *jrn::make_component_override("journal", 4U);
     ASSERT_TRUE(jrn::activate_policy(microscope));
-    for (int idx = 0; idx < 8; ++idx) {
+    for (int const idx : std::views::iota(0, 8)) {
         log_text(jrn::severity::debug, "beat " + std::to_string(idx));
     }
     EXPECT_EQ(texts(drained()), (std::vector<std::string>{"beat 0", "beat 4"}));
@@ -707,7 +707,7 @@ TEST_F(PolicyTest, CongestionBackoffThinsInfoWhileTheConsumerIsBehind) {
     while (!sink->blocked()) {
         std::this_thread::sleep_for(100us);
     }
-    for (int idx = 0; idx < k_total; ++idx) {
+    for ([[maybe_unused]] int const idx : std::views::iota(0, k_total)) {
         log_text(jrn::severity::info, "burst");
     }
     sink->release();
@@ -725,7 +725,7 @@ TEST_F(PolicyTest, CongestionBackoffCanBeDisabledByThreshold) {
     while (!sink->blocked()) {
         std::this_thread::sleep_for(100us);
     }
-    for (int idx = 0; idx < 1500; ++idx) {
+    for ([[maybe_unused]] int const idx : std::views::iota(0, 1500)) {
         log_text(jrn::severity::info, "burst");
     }
     sink->release();
@@ -740,7 +740,7 @@ TEST_F(PolicyTest, ProducersNeverBlockWhenTheRingOverflows) {
     }
     auto const before = jrn::statistics_snapshot();
     std::size_t const flood = jrn::k_ring_capacity * 3U;
-    for (std::size_t idx = 0U; idx < flood; ++idx) {
+    for ([[maybe_unused]] std::size_t const idx : std::views::iota(std::size_t{0U}, flood)) {
         log_text(jrn::severity::warning, "flood");
     }
     sink->release();
@@ -774,9 +774,9 @@ TEST_F(PolicyTest, SequenceOrderIsTotalAcrossProducerThreads) {
     ASSERT_TRUE(jrn::activate_policy(custom));
     {
         std::vector<std::jthread> producers;
-        for (int id = 0; id < 4; ++id) {
+        for ([[maybe_unused]] int const id : std::views::iota(0, 4)) {
             producers.emplace_back([]() {
-                for (int idx = 0; idx < 200; ++idx) {
+                for ([[maybe_unused]] int const idx : std::views::iota(0, 200)) {
                     log_text(jrn::severity::debug, "threaded");
                 }
             });
@@ -784,7 +784,7 @@ TEST_F(PolicyTest, SequenceOrderIsTotalAcrossProducerThreads) {
     }
     auto& records = drained();
     ASSERT_EQ(records.size(), 800U);
-    for (std::size_t idx = 1U; idx < records.size(); ++idx) {
+    for (std::size_t const idx : std::views::iota(std::size_t{1U}, records.size())) {
         EXPECT_LT(records.at(idx - 1U).sequence, records.at(idx).sequence);
     }
 }
@@ -823,8 +823,8 @@ TEST_F(PolicyTest, OddLengthPayloadsKeepTheirExactBytes) {
     custom.stride_by_level.at(7U) = 1U;
     ASSERT_TRUE(jrn::activate_policy(custom));
     std::array<std::byte, 13U> odd{};
-    for (std::size_t idx = 0U; idx < odd.size(); ++idx) {
-        odd.at(idx) = static_cast<std::byte>(idx + 1U);
+    for (auto const [idx, byte] : std::views::enumerate(odd)) {
+        byte = static_cast<std::byte>(idx + 1);
     }
     jrn::log(jrn::severity::debug, jrn::message{"odd length 13"}, jrn::binary_payload{odd});
     auto& records = drained();

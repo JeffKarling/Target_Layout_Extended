@@ -142,9 +142,11 @@ namespace target_layout_extended::journal {
         ) noexcept -> std::span<std::byte> {
             constexpr std::string_view k_prefix = "RAW_PAYLOAD=";
             std::size_t const prefix_len = std::min(k_prefix.size(), buffer.size());
-            for (std::size_t idx = 0U; idx < prefix_len; ++idx) {
-                buffer.subspan(idx).front() = static_cast<std::byte>(k_prefix.at(idx));
-            }
+            std::ranges::transform(
+                k_prefix.substr(0U, prefix_len),
+                buffer.begin(),
+                [](char ch) constexpr noexcept { return static_cast<std::byte>(ch); }
+            );
             std::size_t offset = prefix_len;
             auto const tail = buffer.subspan(offset);
             std::size_t const copy_len = std::min(payload.size(), tail.size());

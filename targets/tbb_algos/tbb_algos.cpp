@@ -2,6 +2,7 @@
 #include <journal/journal.hpp>
 #include <oneapi/tbb/parallel_for_each.h>
 #include <cmath>
+#include <ranges>
 #include <stdexcept>
 
 namespace target_layout_extended::tbb_algos {
@@ -27,7 +28,7 @@ namespace target_layout_extended::tbb_algos {
             }
             oneapi::tbb::parallel_for_each(values.begin(), values.end(), [inner_iterations](double& val) noexcept {
                 double acc = val;
-                for (std::size_t i = 0U; i < inner_iterations; ++i) {
+                for (std::size_t const i : std::views::iota(std::size_t{0U}, inner_iterations)) {
                     auto const step = static_cast<double>(i) * 0.001;
                     acc += std::sin(acc + step) * std::cos(acc - step);
                 }
