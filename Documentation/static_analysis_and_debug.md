@@ -6,7 +6,7 @@ Before running binary sanitizers, **Target Layout Extended** enforces two earlie
 
 Running `clang-tidy` across hand written components requires two commands using the `Clang_Tidy` preset.
 
-```bash
+```bash title="Configure and run Clang-Tidy analysis"
 cmake --preset Clang_Tidy
 cmake --build --preset Clang_Tidy
 ```
@@ -27,7 +27,7 @@ To prevent warning fatigue while keeping active builds clean, findings are group
 
 Two additional static analyzers can be toggled on any configure preset via CMake options.
 
-```bash
+```bash title="Run Include-What-You-Use and Cppcheck gates"
 # Run Include-What-You-Use header hygiene analysis
 cmake --preset GNU_Custom_Debug -DENABLE_IWYU=ON
 cmake --build --preset GNU_Custom_Debug
@@ -46,18 +46,18 @@ Standard debug builds map machine instructions back to source lines, but they do
 
 **Target Layout Extended** provides two levels of standard library checks in `cmake/templates/target_compile_options.cmake`.
 
-### Fast debug assertions
+### Fast assertions in custom release and debug
 
-Enabled automatically in daily `GNU_Custom_Debug` and `Clang_Custom_Debug` builds with low overhead and full ABI compatibility.
+Enabled automatically in `GNU_Custom_Release`, `Clang_Custom_Release`, `GNU_Custom_Debug`, and `Clang_Custom_Debug` builds with low overhead and full ABI compatibility.
 
 * **GCC and Clang with `libstdc++`.** Defines `_GLIBCXX_ASSERTIONS` to enable bounds checks on `std::vector`, `std::string`, `std::span`, and `std::optional` dereferences.
-* **Clang with `libc++`.** Defines `_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG`.
+* **Clang with `libc++`.** Defines `_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST` in custom release and `_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG` in custom debug.
 
 ### Exhaustive deep debug
 
 Run `GNU_Custom_Debug_Deep` and `Clang_Custom_Debug_Deep` across both compilers using the unified runner.
 
-```bash
+```bash title="Run deep debug verification across both compilers"
 ./production_artifacts/build_all.sh custom deep
 ```
 
@@ -70,4 +70,5 @@ Run `GNU_Custom_Debug_Deep` and `Clang_Custom_Debug_Deep` across both compilers 
 | Iterator invalidation tracking | Full container wrapper tracking | Precondition assertions |
 | ABI compatibility with external binaries | Changes container layout | Preserves container layout |
 
-Note that if a component passes `std::vector` or `std::string` across a precompiled system shared library boundary such as `libprotobuf.so`, `_GLIBCXX_DEBUG` changes the binary layout of `std::vector`. Keep third party serialization calls isolated inside dedicated components or test with `GNU_Custom_Debug` when linking prebuilt system C++ libraries.
+!!! warning "ABI boundary with precompiled system libraries"
+    If a component passes `std::vector` or `std::string` across a precompiled system shared library boundary such as `libprotobuf.so`, `_GLIBCXX_DEBUG` changes the binary layout of `std::vector`. Keep third party serialization calls isolated inside dedicated components or test with `GNU_Custom_Debug` when linking prebuilt system C++ libraries.

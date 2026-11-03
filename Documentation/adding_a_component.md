@@ -197,6 +197,14 @@ namespace {
 } // namespace
 ```
 
+## Private helpers versus splitting a new component
+
+As a component grows, keep its physical boundary clean by distinguishing between internal implementation helpers and new sibling components.
+
+* **Private helpers stay in the component root.** When helper functions or classes are only needed inside a single component, place `<helper>.hpp` and `<helper>.cpp` at the root of `targets/<name>/` alongside `<name>.cpp`, and list `<helper>.cpp` under `PRIVATE` in `target_sources()`. Because the file sits outside the `PUBLIC FILE_SET` directory `targets/<name>/<name>/`, downstream targets cannot include it.
+* **Shared capabilities become a new sibling target.** As soon as a helper type or function needs to be called by a second component, split it into its own directory `targets/<new_name>/` with its own public header, catalog, and unit test suite. Never expose internal helpers by reaching across component directories.
+* **Link time optimization removes boundary overhead.** Splitting code into fine grained static library targets does not penalize release performance. `cmake/templates/target_properties.cmake` enables `INTERPROCEDURAL_OPTIMIZATION` in release builds when `ENABLE_IPO` is on, allowing the linker to inline functions and deduplicate template instantiations across static archive boundaries.
+
 ## Verification workflow
 
 After scaffolding the files, run verification across both GNU GCC and LLVM Clang.

@@ -4,7 +4,7 @@
 
 ## The three layer safety net
 
-```text
+```text title="Verification layers from compile time to runtime"
 ┌─────────────────────────────────────────────────────────────┐
 │  Layer 1. Compile Time Warnings and Static Analysis         │
 │  • -Wall -Wextra -Wpedantic -Wconversion + Clang-Tidy       │
@@ -36,8 +36,8 @@
 | `GNU_ASan` | `g++` | Heap, stack, and global buffer overflows, use after free | `GNU_ASan_Verify` |
 | `GNU_UBSan` | `g++` | Undefined behavior across arithmetic and pointers | `GNU_UBSan_Verify` |
 
-> [!IMPORTANT]
-> Sanitizers are mutually exclusive because they use incompatible shadow memory layouts. Do not combine `ASan`, `TSan`, and `MSan` in the same binary. Instead, run each sanitizer workflow preset sequentially.
+!!! important "Sanitizers are mutually exclusive"
+    Sanitizers use incompatible shadow memory layouts. Do not combine `ASan`, `TSan`, and `MSan` in the same binary. Instead, run each sanitizer workflow preset sequentially.
 
 ## Running unit tests under sanitizers
 
@@ -45,7 +45,7 @@ Unlike templates that disable unit tests during sanitizer builds, **Target Layou
 
 Run a configure, build, and test verification pass in one command using CMake workflow presets.
 
-```bash
+```bash title="Execute sanitizer verification workflows"
 # Run all component unit tests under AddressSanitizer
 cmake --workflow --preset Clang_ASan_Verify
 cmake --workflow --preset GNU_ASan_Verify
@@ -63,7 +63,7 @@ cmake --workflow --preset Clang_LSan_Verify
 
 Or run a single component's test binary directly after building.
 
-```bash
+```bash title="Run an isolated component test under AddressSanitizer"
 cmake --preset Clang_ASan && cmake --build --preset Clang_ASan
 ./Build/Clang_ASan/targets/database_manager/database_managerTEST/database_managerTEST
 ```

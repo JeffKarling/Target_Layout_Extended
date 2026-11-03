@@ -4,39 +4,41 @@ This guide explains how to use `journal` when building a new component under Tar
 
 ## Mental model transition from spdlog
 
-In `spdlog`, logging is typically stream- or format-based string concatenation directed to console or file sinks:
-```cpp
+In `spdlog`, logging is typically stream or format based string concatenation directed to console or file sinks.
+
+```cpp title="Traditional spdlog string formatting on caller thread"
 // spdlog pattern
 spdlog::info("Processing item {} with flags {:x}", item_id, flags);
 ```
 
-In `journal`, logging follows three distinct principles:
+In `journal`, logging follows three distinct principles.
 
-1. **Structured, deferred binary ring buffer.** `journal` does zero string formatting on the calling thread. The call records raw pointers, hardware cycle timestamps, and binary payloads into a lock-free ring buffer in roughly 30 nanoseconds.
-2. **Native systemd-journald integration.** Logs become structured systemd journal fields (`MESSAGE`, `PRIORITY`, `COMPONENT`, `CODE_FILE`, `CODE_LINE`, `RAW_PAYLOAD`, `MESSAGE_ID`).
-3. **Compiler-enforced component taxonomy.** Components do not manually declare logger names. The component name is deduced automatically from directory layout at compile time under the physical one-name rule.
+1. **Structured, deferred binary ring buffer.** `journal` does zero string formatting on the calling thread. The call records raw pointers, hardware cycle timestamps, and binary payloads into a lock free ring buffer in roughly 30 nanoseconds.
+2. **Native systemd-journald integration.** Logs become structured systemd journal fields including `MESSAGE`, `PRIORITY`, `COMPONENT`, `CODE_FILE`, `CODE_LINE`, `RAW_PAYLOAD`, and `MESSAGE_ID`.
+3. **Compiler enforced component taxonomy.** Components do not manually declare logger names. The component name is deduced automatically from directory layout at compile time under the physical one name rule.
 
 ## Adding journal to CMakeLists.txt
 
-In your component `targets/<name>/CMakeLists.txt`, link `journal` as a private or public dependency:
+In your component `targets/<name>/CMakeLists.txt`, link `journal` as a private or public dependency.
 
-```cmake
+```cmake title="targets/<name>/CMakeLists.txt"
 target_link_libraries(${DIR_NAME}
     PUBLIC
         ${PROJECT_NAME}::journal
 )
 ```
 
-Include the public header in your code using angle brackets:
-```cpp
+Include the public header in your code using angle brackets.
+
+```cpp title="Include journal public header"
 #include <journal/journal.hpp>
 ```
 
 ## Basic diagnostic logging
 
-Diagnostic logs use `journal::log` with strongly-typed attributes. Attributes can be passed in any order.
+Diagnostic logs use `journal::log` with strongly typed attributes. Attributes can be passed in any order.
 
-```cpp
+```cpp title="Order independent diagnostic logging"
 namespace jrn = target_layout_extended::journal;
 
 // Log plain text
@@ -48,11 +50,11 @@ jrn::log(jrn::message{"Cache lookup succeeded"}, jrn::severity::debug);
 
 ### Supported severity levels
 
-`systemd-journald` uses the standard RFC 5424 / POSIX Syslog numerical priority scheme (ranging from `0` for emergency to `7` for debug). In the journald wire protocol, this is represented by the metadata field `PRIORITY=<digit>`.
+`systemd-journald` uses the standard RFC 5424 and POSIX Syslog numerical priority scheme ranging from `0` for emergency to `7` for debug. In the journald wire protocol, this is represented by the metadata field `PRIORITY=<digit>`.
 
-`journal::severity` is a strongly-typed C++ scoped enum whose underlying numerical values (`0U` through `7U`) map directly to the POSIX `<syslog.h>` constants (`LOG_EMERG` through `LOG_DEBUG`) and are validated at compile time with static assertions:
+`journal::severity` is a strongly typed C++ scoped enum whose underlying numerical values `0U` through `7U` map directly to the POSIX `<syslog.h>` constants `LOG_EMERG` through `LOG_DEBUG` and are validated at compile time with static assertions.
 
-```cpp
+```cpp title="targets/journal/journal/journal.hpp"
 enum class severity : std::uint8_t {
     emergency = 0U, // LOG_EMERG   (PRIORITY=0)
     alert     = 1U, // LOG_ALERT   (PRIORITY=1)
@@ -69,9 +71,9 @@ When journal entries are sent to journald, the consumer thread writes `PRIORITY=
 
 ### Logging binary payloads
 
-Unlike `spdlog` where binary data must be converted to hex strings, `journal` accepts raw binary payloads natively without string conversions:
+Unlike `spdlog` where binary data must be converted to hex strings, `journal` accepts raw binary payloads natively without string conversions.
 
-```cpp
+```cpp title="Logging trivially copyable structs and byte spans"
 struct packet_header {
     std::uint32_t magic;
     std::uint32_t length;
@@ -97,13 +99,13 @@ Binary payloads are sent to systemd-journald under the `RAW_PAYLOAD=` field.
 
 Target Layout Extended requires clean component boundaries. Exceptions must never leak across public component boundaries.
 
-Instead of writing custom catch blocks, every component defines a `.catalog` file and a `struct catalog` in its header containing 32-character hexadecimal UUIDs.
+Instead of writing custom catch blocks, every component defines a `.catalog` file and a `struct catalog` in its header containing 32 character hexadecimal UUIDs.
 
 ### Step 1. Define catalog entry in header
 
-In `targets/<name>/<name>/<name>.hpp`:
+Declare the catalog struct in `targets/<name>/<name>/<name>.hpp`.
 
-```cpp
+```cpp title="targets/<name>/<name>/<name>.hpp"
 namespace target_layout_extended::<name> {
 
     struct catalog {
@@ -120,9 +122,9 @@ namespace target_layout_extended::<name> {
 
 ### Step 2. Document catalog entry in catalog file
 
-In `targets/<name>/<name>.catalog`:
+Add the message catalog entry in `targets/<name>/<name>.catalog`.
 
-```text
+```text title="targets/<name>/<name>.catalog"
 -- 51a3b901c2d44f6e87a213098df24103
 Subject: Component boundary failure in <name>
 Defined-By: <name>
@@ -132,9 +134,9 @@ An unhandled exception escaped internal logic and was caught by the boundary fir
 
 ### Step 3. Protect public functions with boundary firewall
 
-Wrap the public function in `targets/<name>/<name>.cpp` with a single try-catch block:
+Wrap the public function in `targets/<name>/<name>.cpp` with a single try-catch block.
 
-```cpp
+```cpp title="targets/<name>/<name>.cpp"
 auto my_component::execute_task() noexcept -> bool {
     try {
         // Internal logic here
@@ -146,18 +148,19 @@ auto my_component::execute_task() noexcept -> bool {
 }
 ```
 
-When an exception occurs:
-* `catch_boundary_exception` captures the exception type and error message (`std::exception::what()`).
-* It captures a binary stacktrace of return addresses automatically without unwinding.
-* It logs a structured error to the journal with `MESSAGE_ID=51a3b901c2d44f6e87a213098df24103`.
-* It flushes recent suppressed debug breadcrumbs ahead of the error.
-* It returns `false`, preventing the exception from escaping.
+When an exception occurs, `catch_boundary_exception` performs five actions automatically.
+
+* **Exception message extraction.** Captures the exception type and error text from `std::exception::what()`.
+* **Binary stack trace capture.** Captures a binary stack trace of return addresses without string allocation.
+* **Structured catalog emission.** Logs a structured error to the journal with `MESSAGE_ID=51a3b901c2d44f6e87a213098df24103`.
+* **Lookbehind history flush.** Flushes recent suppressed debug breadcrumbs ahead of the error.
+* **Clean error return.** Returns `false`, preventing the exception from escaping across the component boundary.
 
 ### Step 4. Internal catalog exceptions
 
-Internal functions can throw `journal::catalog_exception` to pinpoint exact failure modes:
+Internal functions can throw `journal::catalog_exception` to pinpoint exact failure modes.
 
-```cpp
+```cpp title="Throwing catalog_exception with pre-unwind stack trace"
 void internal_step(int step_id) {
     if (step_id < 0) {
         throw jrn::catalog_exception(
@@ -168,17 +171,18 @@ void internal_step(int step_id) {
 }
 ```
 
-The stacktrace is frozen at the throw site before stack unwinding begins.
+The stack trace is frozen at the throw site before stack unwinding begins.
 
 ## Flight recorder and runtime policies
 
-By default, `journal` operates in **flight recorder mode**:
-* High-volume `debug` records stay in memory in the 2048-slot ring buffer and are not written to `journald`.
-* When a `warning`, `error`, or higher failure occurs, `journal` automatically flushes recent skipped breadcrumbs with `LOG_LOOKBEHIND=1` ahead of the failure record.
+By default, `journal` operates in **flight recorder mode**.
 
-If external controls need to modify strides or enable verbose debug logging for a specific component, use `journal::activate_policy`:
+* **Ring buffered debug logs.** High volume `debug` records stay in memory inside the 2048 slot ring buffer and are not written to `journald`.
+* **Automatic lookbehind on fault.** When a `warning`, `error`, or higher severity failure occurs, `journal` automatically flushes recent skipped breadcrumbs with `LOG_LOOKBEHIND=1` ahead of the failure record.
 
-```cpp
+If external controls need to modify strides or enable verbose debug logging for a specific component, use `journal::activate_policy`.
+
+```cpp title="Activating a per-component debug microscope policy"
 jrn::policy policy{};
 // Stream every debug log from the geometry component
 auto override_entry = jrn::make_component_override("geometry", 1U);
@@ -190,9 +194,9 @@ if (override_entry.has_value()) {
 
 ## Unit testing with custom sinks
 
-In unit tests, redirect journal emissions into memory using `journal::detail::set_record_sink`:
+In unit tests, redirect journal emissions into memory using `journal::detail::set_record_sink`.
 
-```cpp
+```cpp title="targets/<name>/<name>TEST/<name>TEST.cpp"
 #include <journal/journal.hpp>
 #include <gtest/gtest.h>
 

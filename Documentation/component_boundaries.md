@@ -14,7 +14,7 @@ Inside a component's `.cpp` file, standard C++ exceptions and throwing standard 
 
 To keep subsystem interfaces narrow and predictable, public functions in operational components such as `database_manager`, `tbb_algos`, and `db_export` are marked `noexcept` and return explicit status values.
 
-```cpp
+```cpp title="targets/database_manager/database_manager/database_manager.hpp"
 [[nodiscard]] auto initialize(const std::filesystem::path& db_path) noexcept -> bool;
 [[nodiscard]] auto add_item(const Item& item) noexcept -> bool;
 ```
@@ -34,7 +34,7 @@ A Lippincott function is a centralized exception handling routine called from a 
 
 Here is how `targets/database_manager/database_manager.cpp` guards its public boundary.
 
-```cpp
+```cpp title="targets/database_manager/database_manager.cpp"
 auto database_store::add_item(const Item& item) noexcept -> bool {
     try {
         if (item.id().empty()) {
@@ -87,7 +87,7 @@ When an exception forces a public boundary function to abort, `journal::catch_bo
 
 Each component declares its failure contracts in a closed `struct catalog` aggregate inside its public header.
 
-```cpp
+```cpp title="targets/database_manager/database_manager/database_manager.hpp"
 struct catalog {
     journal::catalog_entry k_init_failed{
         .message_id = "4c8a1023e5b94d719f012a34c8b5e101",
@@ -125,7 +125,7 @@ Components select catalog entries according to the size of their catalog.
 
 Not every diagnostic event represents a boundary failure. For internal operational logs, `targets/journal/` provides `journal::log` with strongly typed arguments. It deduces `COMPONENT` from the first path segment after `targets/` in `std::source_location::file_name()`.
 
-```cpp
+```cpp title="Operational text and binary logging"
 journal::log(
     journal::severity::error,
     journal::message{"parent directory does not exist for path: " + path.string()}
@@ -160,13 +160,13 @@ Traditional logging frameworks parse DWARF debug sections and demangle C++ ident
 
 Operators and continuous integration runners can retrieve the binary log entry using `journalctl`.
 
-```bash
+```bash title="Query journal entry in JSON format"
 journalctl -g "snapshot \+ trace" -n 1 -o json
 ```
 
 In the JSON output, `systemd-journald` represents `RAW_PAYLOAD` as a numeric byte array.
 
-```json
+```json title="systemd-journald JSON record with RAW_PAYLOAD"
 {
   "MESSAGE": "[journal] snapshot + trace",
   "CODE_LINE": "232",
@@ -176,13 +176,13 @@ In the JSON output, `systemd-journald` represents `RAW_PAYLOAD` as a numeric byt
 
 Every 8 bytes form one little endian 64 bit address. Unpacking the first two entries produces addresses `0x4058bf` and `0x4036d6`. Passing them to `addr2line` resolves the exact C++ source locations.
 
-```bash
+```bash title="Resolve frame addresses with addr2line"
 addr2line -e ./Build/Clang_Custom_Debug/targets/journal/journalTEST/journalTEST -f -C 0x4058bf 0x4036d6
 ```
 
 The symbolizer prints the demangled function signature along with the file and line number.
 
-```text
+```text title="Demangled source locations"
 target_layout_extended::journal::detail::capture_current_stacktrace(std::span<unsigned long, 18446744073709551615ul>)
 targets/journal/journal.cpp:218
 JournalTest_EmitsTextAndBinaryLogsAcrossAllSyslogSeveritiesInAnyArgumentOrder_Test::TestBody()
@@ -201,7 +201,7 @@ In standard `systemd-journald`, a message catalog file maps 128 bit `MESSAGE_ID`
 
 In **Target Layout Extended**, each operational component stores its `<name>.catalog` file inside `targets/<name>/<name>.catalog`.
 
-```text
+```text title="targets/database_manager/database_manager.catalog"
 # systemd journald message catalog for component: database_manager
 
 -- 4c8a1023e5b94d719f012a34c8b5e101
@@ -224,7 +224,7 @@ Colocating `<name>.catalog` inside the component folder keeps logging aligned wi
 
 Boundary and internal events can be filtered by any structured field.
 
-```bash
+```bash title="Filter structured journal events by component and message ID"
 journalctl COMPONENT=database_manager
 journalctl MESSAGE_ID=4c8a1023e5b94d719f012a34c8b5e101
 journalctl COMPONENT=database_manager PRIORITY=3 -o verbose
@@ -232,7 +232,7 @@ journalctl COMPONENT=database_manager PRIORITY=3 -o verbose
 
 The build does not install `<name>.catalog` files. The explanation text only appears in `journalctl -x` once the files are registered with the local catalog database.
 
-```bash
+```bash title="Install and update systemd message catalogs"
 sudo cp targets/*/*.catalog /usr/lib/systemd/catalog/
 sudo journalctl --update-catalog
 journalctl -x MESSAGE_ID=4c8a1023e5b94d719f012a34c8b5e101

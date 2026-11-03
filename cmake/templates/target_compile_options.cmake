@@ -8,7 +8,11 @@ target_compile_definitions(${DIR_NAME} PRIVATE
             _LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_EXTENSIVE
             _GLIBCXX_ASSERTIONS
         >
-        $<$<CONFIG:Clang_Release>:NDEBUG _LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST>
+        $<$<CONFIG:Clang_Release>:
+            NDEBUG
+            _LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST
+            _GLIBCXX_ASSERTIONS
+        >
         $<$<CONFIG:Clang_RelWithDebInfo>:_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_NONE>
         $<$<CONFIG:Clang_Tidy>:NDEBUG>
         $<$<CONFIG:Clang_UBSan>:NDEBUG>

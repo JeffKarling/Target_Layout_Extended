@@ -8,7 +8,7 @@ C++ projects face a tension between local developer velocity and downstream cons
 
 Every preset name follows one pattern.
 
-```text
+```text title="Preset naming convention"
 <Compiler>_<Flavor>_<Config>[_Test | _Verify]
 ```
 
@@ -34,8 +34,8 @@ Default presets set `CMAKE_BUILD_TYPE` to a standard value such as `Debug` or `R
 
 `target_compile_options.cmake` and `target_properties.cmake` match these names with `$<CONFIG:GNU_Release>` and similar generator expressions. One flat list of generator expressions therefore covers every compiler and configuration without `if()` branches. Standard build types match none of the custom compile option expressions. Default presets therefore get CMake's stock flags, with link time optimization added in `Release` when `ENABLE_IPO` is on.
 
-> [!NOTE]
-> Because the build type names are custom, CMake does not add its own `-O` or `-g` defaults for them. Every flag a custom configuration needs is listed explicitly in `target_compile_options.cmake`.
+!!! note "Explicit flag lists for custom configurations"
+    Because the build type names are custom, CMake does not add its own `-O` or `-g` defaults for them. Every flag a custom configuration needs is listed explicitly in `target_compile_options.cmake`.
 
 ## Custom development presets
 
@@ -44,12 +44,35 @@ Named `GNU_Custom_*` and `Clang_Custom_*`.
 * **Host CPU instruction sets.** Every custom configuration passes `-march=native`. Release adds `-O3 -ffast-math -fstack-protector-strong` and link time optimization when `ENABLE_IPO` is on.
 * **Accurate stack traces.** Debug configurations use `-O1` and `-O0` for GNU deep debug, plus `-ggdb -gdwarf-5 -fno-omit-frame-pointer -fno-optimize-sibling-calls`.
 * **Strict warnings in debug.** `Debug` and `Debug_Deep` enable `-Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wformat=2` plus compiler specific diagnostics. Release configurations do not repeat the warning set.
-* **Standard library hardening.** Each configuration defines its own libstdc++ or libc++ hardening macros. See [static analysis and deep debug](static_analysis_and_debug.md).
+* **Layered standard library and stack hardening.** Custom configurations keep runtime safety checks active across both debug and production release builds.
 
-> [!WARNING]
-> `-ffast-math` in `*_Custom_Release` and `Clang_Custom_RelWithDebInfo` relaxes IEEE 754 semantics. NaN and infinity checks may be optimized away and floating point results can differ from Default builds. Remove the flag for components that depend on strict floating point behavior.
+### Production and debug hardening matrix
+
+| Preset tier | Optimization and stack flags | Standard library hardening defines | Runtime behavior |
+| --- | --- | --- | --- |
+| `*_Default_Release` | `-O3` | `NDEBUG` | Unhardened baseline for downstream package portability |
+| `*_Custom_Release` | `-march=native -O3 -ffast-math -fstack-protector-strong` | `NDEBUG`, `_GLIBCXX_ASSERTIONS`, `_LIBCPP_HARDENING_MODE_FAST` | Stack canary verification and fast bounds checks on `std::span`, `std::vector`, and `std::optional` with ABI stability |
+| `*_Custom_Debug` | `-march=native -O1 -ggdb -gdwarf-5 -fno-omit-frame-pointer` | `_GLIBCXX_ASSERTIONS`, `_LIBCPP_HARDENING_MODE_DEBUG` | Full precondition assertions with fast compilation and unchanged container layouts |
+| `*_Custom_Debug_Deep` | `-march=native -O0` or `-O1 -ggdb -gdwarf-5` | `_GLIBCXX_DEBUG`, `_GLIBCXX_DEBUG_PEDANTIC`, `_LIBCPP_HARDENING_MODE_EXTENSIVE` | Exhaustive iterator invalidation tracking and container ownership checks. See [static analysis and deep debug](static_analysis_and_debug.md) |
+
+!!! warning "Fast math in custom release builds"
+    `-ffast-math` in `*_Custom_Release` and `Clang_Custom_RelWithDebInfo` relaxes IEEE 754 semantics. NaN and infinity checks may be optimized away and floating point results can differ from Default builds. Override the flag locally for components that depend on strict floating point behavior.
 
 Set `-DENABLE_WARNING_AS_ERROR=ON` at configure time to turn warnings into errors in debug, analysis and sanitizer configurations.
+
+### Overriding shared flags per component
+
+Centralized templates in `cmake/templates/` set the baseline, while individual components remain free to append overrides in their own `CMakeLists.txt` after including `target_compile_options.cmake`. The compiler evaluates flags from left to right, so appending an inverse flag overrides the inherited default for that target alone.
+
+```cmake title="targets/<name>/CMakeLists.txt"
+include(${CMAKE_BINARY_DIR}/target_properties.cmake)
+include(${CMAKE_BINARY_DIR}/target_compile_options.cmake)
+
+# Restore strict IEEE 754 floating point semantics for a numerical component
+target_compile_options(${DIR_NAME} PRIVATE
+        $<$<CONFIG:Clang_Release,Clang_RelWithDebInfo,GNU_Release>:-fno-fast-math>
+)
+```
 
 ## Default portable presets
 
@@ -70,14 +93,14 @@ Compiling and testing every component under both `g++` and `clang++` catches def
 
 CMake workflow presets chain configure, build and `ctest` into one command for a single toolchain.
 
-```bash
+```bash title="Run single compiler CMake workflow presets"
 cmake --workflow --preset GNU_Custom_Debug_Verify
 cmake --workflow --preset Clang_Custom_Debug_Verify
 ```
 
 A workflow preset cannot span two configure presets. `production_artifacts/build_all.sh` therefore runs the GNU workflow followed by the Clang workflow and stops at the first failure.
 
-```bash
+```bash title="Run dual compiler verification script"
 ./production_artifacts/build_all.sh custom debug
 ./production_artifacts/build_all.sh default release
 ./production_artifacts/build_all.sh custom deep

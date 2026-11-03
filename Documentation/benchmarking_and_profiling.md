@@ -8,7 +8,7 @@ When software is decomposed into Lakos physical components, source instrumentati
 
 Just as `<name>TEST/` isolates unit verification, `<name>BENCH/` isolates performance measurement.
 
-```text
+```text title="Colocated benchmark directory layout"
 targets/tbb_algos/
 ├── CMakeLists.txt
 ├── tbb_algos.cpp
@@ -26,7 +26,7 @@ targets/tbb_algos/
 
 The benchmark `CMakeLists.txt` derives target names from `${DIR_NAME}` and wires up baseline paths and run targets.
 
-```cmake
+```cmake title="targets/tbb_algos/tbb_algosBENCH/CMakeLists.txt"
 cmake_path(GET CMAKE_CURRENT_LIST_DIR FILENAME DIR_NAME)
 string(REGEX REPLACE "BENCH$" "" COMPONENT_NAME ${DIR_NAME})
 
@@ -79,9 +79,10 @@ It captures core timing and hardware metrics per operation.
 
 On Linux systems where `/proc/sys/kernel/perf_event_paranoid` is set above 1, unprivileged processes cannot open hardware PMU counters. In that scenario `perf_scope` logs an operational warning and falls back to `std::chrono::steady_clock` timing without failing the benchmark run or test suite.
 
-To allow unprivileged hardware counter access on developer workstations, set the sysctl value.
+!!! tip "Enabling unprivileged hardware PMU counters"
+    To allow unprivileged hardware counter access on developer workstations, lower `perf_event_paranoid` via `sysctl`.
 
-```bash
+```bash title="Enable unprivileged hardware PMU counters"
 sudo sysctl kernel.perf_event_paranoid=1
 ```
 
@@ -89,7 +90,7 @@ sudo sysctl kernel.perf_event_paranoid=1
 
 Unbounded optimization consumes engineering effort when a component is already fast enough for its purpose. To keep optimization bounded, each `<name>BENCH/` target stores a birth baseline in `baseline.json`.
 
-```json
+```json title="targets/tbb_algos/tbb_algosBENCH/baseline.json"
 {
   "component": "tbb_algos",
   "human_baseline_score": 6.000,
@@ -109,7 +110,7 @@ Unbounded optimization consumes engineering effort when a component is already f
 
 The evaluation engine computes a speedup factor by comparing current `wall_ns_per_op` with the birth baseline. That speedup maps to a delta score using the chosen utility curve.
 
-* **Logarithmic curve.** Awards 2.0 score points for each doubling of performance via $\Delta = 2.0 \cdot \log_2(\text{speedup})$. Early gains score well while extreme micro optimizations yield diminishing returns.
+* **Logarithmic curve.** Awards 2.0 score points for each doubling of performance via `delta = 2.0 * log2(speedup)`. Early gains score well while extreme micro optimizations yield diminishing returns.
 * **Diminishing returns curve.** Applies a steeper square root decay for components where only initial algorithmic wins matter.
 * **Linear curve.** Scales score points proportionally with speedup. Useful on core bottleneck components where every percentage gain translates directly to system throughput.
 
@@ -119,7 +120,7 @@ Optimization halts when current score reaches `target_score`, or when the projec
 
 When a new benchmark runs for the first time without an existing `baseline.json`, `perf_scope::load_or_create_baseline()` measures the initial hardware counters and serializes `baseline.json` automatically using the `score_baseline` struct provided by `main()`.
 
-```cpp
+```cpp title="targets/tbb_algos/tbb_algosBENCH/tbb_algosBENCH.cpp"
 ps::score_baseline default_birth{};
 default_birth.component = "tbb_algos";
 default_birth.human_baseline_score = 6.0;
@@ -135,11 +136,11 @@ Commit `baseline.json` alongside the benchmark source code. Future benchmark run
 
 Run the dedicated CMake benchmark target to measure the workload and print the score report.
 
-```bash
+```bash title="Run component benchmark target"
 cmake --build --preset GNU_Custom_Release --target tbb_algosBENCH_run
 ```
 
-```markdown
+```markdown title="production_artifacts/profiling/tbb_algos_score_report.md"
 # Component Benchmark & Score Report (tbb_algos)
 - Birth baseline score: 6.00 / 10.00 (target: 8.50, curve: logarithmic, token budget: 4000)
 - Latency (ns/op):      318450.00 (birth: 650000.00, speedup: 2.04x)
