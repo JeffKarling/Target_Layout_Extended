@@ -30,7 +30,7 @@ jrn::log(
 This design follows three core principles.
 
 1. **Zero string formatting on the producer thread.** `journal::message` carries a static description while runtime variables are passed as raw bytes via `journal::as_binary_payload`. The producer copies the raw bytes and hardware cycle timestamp into the lock free ring buffer in roughly 30 nanoseconds without running `std::format` or `snprintf`.
-2. **Native systemd-journald integration.** Logs become structured systemd journal fields including `MESSAGE`, `PRIORITY`, `COMPONENT`, `CODE_FILE`, `CODE_LINE`, `RAW_PAYLOAD`, and `MESSAGE_ID`.
+2. **Native systemd-journald integration.** Logs become structured systemd journal fields including `MESSAGE`, `PRIORITY`, `COMPONENT`, `CODE_FILE`, `CODE_LINE`, `RAW_PAYLOAD`[^1], and `MESSAGE_ID`.
 3. **Compiler enforced component taxonomy.** Components do not manually declare logger names. The component name is deduced automatically from directory layout at compile time under the physical one name rule.
 
 ## Adding journal to CMakeLists.txt
@@ -115,7 +115,7 @@ std::span<const std::byte> raw_bytes = get_raw_buffer();
 jrn::log(jrn::severity::debug, jrn::binary_payload{raw_bytes});
 ```
 
-Binary payloads are sent to systemd-journald under the `RAW_PAYLOAD=` field.
+Binary payloads are sent to systemd-journald under the `RAW_PAYLOAD=` field.[^1]
 
 ## Catalog entries and boundary exception firewall
 
@@ -244,3 +244,5 @@ TEST(MyComponentTest, VerifiesLogOutput) {
     jrn::detail::reset_record_sink();
 }
 ```
+
+[^1]: Because `RAW_PAYLOAD` contains non-printable bytes, `journalctl` hides it in default text output and serializes it as a JSON array of unsigned byte integers when queried with `-o json`. To inspect the raw byte array with `jq`, run `journalctl -n 1 -o json | jq '.RAW_PAYLOAD'`. To decode a logged C++ struct such as `item_context` with `uint64_t` and `uint32_t` fields back into typed values on the command line, unpack the JSON byte array with Python's `struct` module via `journalctl -n 1 -o json | python3 -c "import sys, json, struct; print(struct.unpack('<QI', bytes(json.load(sys.stdin)['RAW_PAYLOAD'])[:12]))"`. For boundary failure stack traces stored in `RAW_PAYLOAD`, see the `addr2line` symbolization workflow in [component boundaries and catalogs](component_boundaries.md).
