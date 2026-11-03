@@ -25,6 +25,7 @@ theme:
     - navigation.top
 
 markdown_extensions:
+  - footnotes
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span

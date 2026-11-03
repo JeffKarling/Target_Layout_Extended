@@ -9,7 +9,7 @@ In the C++ logging landscape, libraries fall into four distinct architectural ge
 | Generation 1 synchronous `sd_journal_sendv` and `syslog` | 15,000 to 25,000 ns | None or internal socket buffers | Kernel socket timestamp | Kernel socket serialization |
 | Generation 1 synchronous file `spdlog` and `glog` | 1,500 to 4,000 ns | Often 1 per call for string buffers | `clock_gettime` vDSO | Mutex lock order |
 | Generation 2 async text `spdlog` async and `g3log` | 150 to 600 ns | 1 per call or pooled string buffer | `clock_gettime` vDSO | MPMC queue order |
-| Generation 3 deferred MPSC `journal` | 28 to 48 ns | Zero via `constinit` static ring | Hardware `rdtsc` | Exact atomic `LOG_SEQ` |
+| Generation 3 deferred MPSC `journal` | 28 to 48 ns[^1] | Zero via `constinit` static ring | Hardware `rdtsc` | Exact atomic `LOG_SEQ` |
 | Generation 3 deferred SPSC Quill and fmtlog | 12 to 30 ns | Dynamic per thread SPSC queues | Hardware `rdtsc` | Reconstructed by timestamp sort |
 | Generation 4 offline dictionary Stanford NanoLog | 7 to 18 ns | Dynamic per thread SPSC staging | Hardware `rdtsc` | Offline decompressor sort |
 
@@ -26,3 +26,5 @@ In the C++ logging landscape, libraries fall into four distinct architectural ge
 ## Where `journal` beats even Quill and fmtlog
 
 **Consumer side flight recorder filtering.** In most asynchronous loggers, enabling `debug` logging forces the background consumer thread to format and write every `debug` message to disk or `journald`, which saturates the consumer I/O bottleneck during bursts. Because `journal` separates `read_slot_header` from `read_slot_payload`, a suppressed `debug` record in flight recorder mode is written to the ring in 28 nanoseconds and stepped over by the consumer in about 15 nanoseconds by inspecting only the 40 byte header. No payload bytes are copied out of the ring and zero `sd_journal_sendv` system calls are made unless an error triggers `flush_lookbehind`.
+
+[^1]: All `journal` measurements are recorded under custom release presets with production hardening enabled, including `-fstack-protector-strong` and standard library bounds assertions via `_GLIBCXX_ASSERTIONS` and `_LIBCPP_HARDENING_MODE_FAST`. Hardware performance counter comparisons against unhardened `-O3 -DNDEBUG` builds show that stack canary verification and `std::span` precondition checks add roughly 2 to 3 nanoseconds per call because the CPU branch predictor speculates through non-failing bounds checks with near zero misses. Reaching Generation 3 ring buffer latency while keeping stack protection and bounds hardening active makes these benchmark numbers directly representative of hardened production binaries rather than stripped microbenchmark builds.
