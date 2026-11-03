@@ -23,15 +23,16 @@ Map where the component sits in the acyclic dependency graph. Identify which com
 Design the interface in `targets/<name>/<name>/<name>.hpp`. Follow Scott Meyers rules from `.agents/rules/meyers_interface_design.md` and ranges guidelines from `.agents/rules/ranges_and_views.md`. Determine if the component is an operational boundary requiring `noexcept` status returns.
 
 4. **Catalog error taxonomy and logging.**
-Plan component catalog entries following `.agents/rules/boundary_exceptions_and_catalog_logging.md`. Catalogs serve as the public interface documentation. Readers should understand high level component capabilities from catalog entries alone without reading the implementation. Rethrowing more than one exception across a component boundary is a code smell. A focused component maintains a single boundary catch all firewall paired with an error catalog entry, while defining generous public catalog log entries across all severity levels.
+Plan component catalog entries following `.agents/rules/boundary_exceptions_and_catalog_logging.md`. Catalogs in `<name>.catalog` and `struct catalog` document the public boundary failure contracts of the component. Rethrowing more than one exception across a component boundary is a code smell. A focused operational component maintains a single boundary catch all firewall paired with `journal::catch_boundary_exception`, while emitting internal operational logs via `journal::log` across all eight Syslog severities into the lock free flight recorder ring buffer.
 
 5. **Verification duo scope.**
 Determine happy paths, boundary edge cases, and invalid inputs for `targets/<name>/<name>TEST/`. Determine the hot algorithmic workload and initial birth metric targets for `targets/<name>/<name>BENCH/`.
 
 6. **Component isolation opportunities.**
-Review `.agents/rules/component_segmentation_opportunities.md`. Determine whether the component benefits from isolated configuration advantages:
+Review `.agents/rules/component_segmentation_opportunities.md` and `.agents/rules/override_shared_target_defaults.md`. Determine whether the component benefits from isolated configuration advantages:
+* Should helper logic stay in a private `<helper>.cpp` at the component root or be split into a new sibling component under `targets/`?
 * Can the internal implementation use newer language standard features privately without impacting consumers?
-* Does this component contain hot numerical routines that warrant local SIMD extensions or fast math flags?
+* Does this component contain hot numerical routines that warrant local SIMD extensions or require `-fno-fast-math` for strict IEEE 754 floating point semantics?
 * Does this component wrap generated code or external dependencies requiring isolated warning filters?
 
 ## Step 1. Draft the public interface
@@ -127,10 +128,11 @@ Add unit tests covering:
 * Typical valid inputs and happy paths.
 * Boundary conditions and edge cases.
 * Invalid inputs caught safely without leaking exceptions.
+* Diagnostic log verification in memory when needed using `journal::detail::set_record_sink`, `journal::flush`, and `journal::detail::reset_record_sink`.
 
 ## Step 5. Implement logic, logging, and boundary exception firewall
 
-Implement the member functions in `targets/<name>/<name>.cpp`.
+Implement the member functions in `targets/<name>/<name>.cpp` using `<ranges>` and `std::views` without naked C style `for` loops.
 Emit internal diagnostics using `journal::log` with strong types `journal::severity`, `journal::message`, and `journal::binary_payload`. Enclose the public boundary in a single `try` block, delegating any unhandled fault to `journal::catch_boundary_exception`:
 
 ```cpp
@@ -147,24 +149,23 @@ auto <name>::process(std::span<const std::byte> payload) noexcept -> bool {
 
 Never expose multiple exception pathways to callers. Use value based status returns for domain outcomes.
 
-## Step 6. Verify under debug
+## Step 6. Verify across both compilers
 
-Compile and execute unit tests:
+Compile and execute unit tests across both GNU GCC and LLVM Clang:
 
 ```bash
-cmake --build Build/Clang_Custom_Debug
-ctest --test-dir Build/Clang_Custom_Debug --output-on-failure
+./production_artifacts/build_all.sh custom debug
+./production_artifacts/build_all.sh default release
 ```
 
-Confirm that 100% of test targets pass cleanly.
+Confirm that 100% of test targets pass cleanly under both toolchains.
 
 ## Step 7. Capture birth benchmark baseline
 
-Configure and compile the component benchmark in `targets/<name>/<name>BENCH/`:
+Configure and execute the component benchmark in `targets/<name>/<name>BENCH/` under an optimized custom release preset:
 
 ```bash
-cmake --build Build/Clang_Custom_Release --target <name>BENCH
-./Build/Clang_Custom_Release/targets/<name>/<name>BENCH/<name>BENCH
+cmake --build --preset Clang_Custom_Release --target <name>BENCH_run
 ```
 
 Verify that initial physical metrics are saved to `baseline.json`.

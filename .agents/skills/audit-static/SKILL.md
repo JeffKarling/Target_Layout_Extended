@@ -50,10 +50,11 @@ Apply Include-What-You-Use corrections:
 
 ## Step 4. Verification
 
-Recompile under the default debug preset to confirm all static analysis passes complete cleanly:
+Run the dual compiler custom debug verification script with warnings treated as errors to confirm all static analysis passes and strict compiler warning gates complete cleanly:
 
 ```bash
-cmake --build Build/Clang_Custom_Debug
+cmake --preset GNU_Custom_Debug -DENABLE_WARNING_AS_ERROR=ON && cmake --build --preset GNU_Custom_Debug
+cmake --preset Clang_Custom_Debug -DENABLE_WARNING_AS_ERROR=ON && cmake --build --preset Clang_Custom_Debug
 ```
 
-Ensure no warnings or static analysis diagnostics remain in modified components.
+Ensure no warnings or static analysis diagnostics remain in modified components, and reset `-DENABLE_IWYU=OFF -DENABLE_CPPCHECK=OFF` when finished.

@@ -28,13 +28,19 @@ Range algorithms natively support projections. Use member projections instead of
 
 Use `std::ranges::find` or `std::ranges::sort` directly with a projection argument such as `&Type::member`. Projections evaluate directly inside the algorithm, avoiding extra view wrappers or lambda clutter.
 
-## Enumerate over integer indexing
+## Enumerate and iota over naked C style for loops
 
-When a numeric index is needed alongside element values, use `std::views::enumerate`.
+Naked C style index loops such as `for (std::size_t i = 0; i < size; ++i)` and `for (;;)` are prohibited across component implementations, tests, and benchmarks.
 
-Never write C-style index loops `for (std::size_t i = 0; i < size; ++i)` solely to track element positions. Deconstruct pairs cleanly using C++23 structured bindings `for (auto const [index, value] : std::views::enumerate(container))`.
+When a numeric index is needed alongside element values, use `std::views::enumerate` with C++23 structured bindings `for (auto const [index, value] : std::views::enumerate(container))`.
 
-Structured bindings eliminate index out of bounds risks and remove variable increment bookkeeping.
+When repeating an operation a fixed number of times or stepping across an integer interval without an underlying container, use `for (std::size_t const idx : std::views::iota(std::size_t{0U}, count))`. For unbounded event loops, write `while (true)` rather than `for (;;)`.
+
+## Range algorithms and hoisting bounds checks under hardening
+
+Custom release and debug presets compile with `_GLIBCXX_ASSERTIONS` and `_LIBCPP_HARDENING_MODE_FAST`. Calling `.at(idx)` or `.subspan(idx).front()` inside an index loop repeats bounds checking instructions on every iteration.
+
+Prefer `std::ranges::transform`, `std::ranges::fold_left`, `std::ranges::to<std::vector<T>>`, or `std::views::enumerate` over a pre-sliced `span.first(count)`. Hoisting the slice before the loop eliminates redundant per-element bounds checks while maintaining full memory safety.
 
 ## Lifetime safety and escaping views
 

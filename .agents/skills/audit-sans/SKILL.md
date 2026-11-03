@@ -11,24 +11,27 @@ Use this runbook to catch memory corruption, data races, undefined behavior, and
 
 ## Step 1. AddressSanitizer and leak detection
 
-Run all component unit tests under AddressSanitizer using the CMake workflow preset:
+Run all component unit tests under AddressSanitizer across both Clang and GCC workflow presets, plus standalone LeakSanitizer:
 
 ```bash
 cmake --workflow --preset Clang_ASan_Verify
+cmake --workflow --preset GNU_ASan_Verify
+cmake --workflow --preset Clang_LSan_Verify
 ```
 
-AddressSanitizer detects heap buffer overflows, stack out of bounds access, use-after-free defects, and process memory leaks.
+AddressSanitizer and LeakSanitizer detect heap buffer overflows, stack out of bounds access, use after free defects, and process memory leaks.
 If a sanitizer report is emitted, inspect the printed stack trace to identify the offending source line.
 
 ## Step 2. UndefinedBehaviorSanitizer pass
 
-Run all component unit tests under UndefinedBehaviorSanitizer:
+Run all component unit tests under UndefinedBehaviorSanitizer across both compilers:
 
 ```bash
 cmake --workflow --preset Clang_UBSan_Verify
+cmake --workflow --preset GNU_UBSan_Verify
 ```
 
-This pass detects signed integer overflows, null pointer dereferences, misaligned pointer accesses, and invalid enum representations.
+This pass detects signed integer overflows, null pointer dereferences, misaligned pointer accesses, and invalid enum representations. Note that `Clang_UBSan` passes `-fno-sanitize-recover=undefined` to abort immediately on undefined behavior.
 
 ## Step 3. ThreadSanitizer multithreaded pass
 
@@ -38,28 +41,25 @@ Run multithreaded components under ThreadSanitizer:
 cmake --workflow --preset Clang_TSan_Verify
 ```
 
-ThreadSanitizer inspects memory accesses in `tbb_algos` and `database_manager` to flag unprotected shared state reads and lock order inversions.
+ThreadSanitizer inspects concurrent memory accesses in `journal`, `tbb_algos`, and `database_manager` to flag unprotected shared state reads, atomic memory order defects, and lock order inversions.
 
-## Step 4. Dual toolchain parity check under GCC
+## Step 4. Dual toolchain parity check
 
-Compile and test the repository under GCC to ensure cross-compiler portability:
+Compile and test the repository across both GCC and Clang in custom debug and portable default release modes:
 
 ```bash
-cmake --preset GNU_Custom_Debug
-cmake --build --preset GNU_Custom_Debug
-ctest --test-dir Build/GNU_Custom_Debug --output-on-failure
+./production_artifacts/build_all.sh custom debug
+./production_artifacts/build_all.sh default release
 ```
 
-Confirm that code compiles without warnings under GCC and that no Clang-specific extensions were introduced.
+Confirm that code compiles without warnings under both compilers and that no vendor specific extensions were introduced.
 
 ## Step 5. Deep debug standard library hardening
 
-Execute deep debug builds to validate standard library preconditions and iterator ranges:
+Execute deep debug builds across both compilers (`_GLIBCXX_DEBUG_PEDANTIC` on GCC and `_LIBCPP_HARDENING_MODE_EXTENSIVE` plus `_GLIBCXX_ASSERTIONS` on Clang) to validate standard library preconditions and iterator ranges:
 
 ```bash
-cmake --preset Clang_Custom_Debug_Deep
-cmake --build --preset Clang_Custom_Debug_Deep
-ctest --test-dir Build/Clang_Custom_Debug_Deep --output-on-failure
+./production_artifacts/build_all.sh custom deep
 ```
 
-This verifies that container indexing and iterator operations remain strictly within valid bounds.
+This verifies that container indexing and iterator operations remain strictly within valid bounds across both toolchains.

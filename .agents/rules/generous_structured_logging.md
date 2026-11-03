@@ -2,9 +2,17 @@
 
 ## Core mandate
 
-Agents must log generously across components without fearing heap allocation overhead.
+Agents must log generously across components without fearing heap allocation or I/O blocking on the calling thread.
 
-The `journal` backend formats structured fields into stack buffers using `constexpr` helpers and transmits them in a single vector call via `sd_journal_sendv`. Never withhold internal diagnostics under the mistaken assumption that logging slows down execution.
+The `journal` component records events into a preallocated 2048 slot `constinit` lock free multi producer single consumer ring buffer in roughly 30 nanoseconds. Producer calls capture a hardware cycle counter timestamp via `raw_timestamp`, static string pointers, and raw payload bytes without formatting strings or invoking system calls on the application thread. A dedicated `SCHED_BATCH` background consumer thread formats `iovec` fields into stack buffers and transmits them via `sd_journal_sendv`.
+
+## Flight recorder mode and runtime policies
+
+By default, `journal` operates as an in-memory flight recorder.
+
+High volume `debug` logs remain inside the ring buffer with zero `systemd-journald` I/O traffic. When a record at or above `lookbehind_trigger` such as `error` or a boundary exception is processed, the consumer thread automatically flushes recent skipped `debug` breadcrumbs in sequence order with `LOG_LOOKBEHIND=1` ahead of the fault.
+
+Runtime controllers can adjust per-level strides, congestion thresholds, or per-component `debug` microscope overrides at any time via `journal::activate_policy` and `journal::make_component_override`.
 
 ## All eight Syslog severity classifications
 
@@ -16,16 +24,18 @@ Pass strong types `journal::severity`, `journal::message`, and `journal::binary_
 
 Operational boundaries tie unhandled internal exceptions to documented catalog entries in `<name>.catalog` and `struct catalog`.
 
-Use `journal::catch_boundary_exception` in boundary `catch` blocks and `journal::catalog_exception` when throwing specific contract failures internally. Every boundary failure event automatically attaches a binary `std::stacktrace` payload in `RAW_PAYLOAD=` alongside the invariant UUID `MESSAGE_ID`.
+Use `journal::catch_boundary_exception` in boundary `catch` blocks and `journal::catalog_exception` when throwing specific contract failures internally. Every boundary failure event automatically attaches a pre-unwind binary stack trace in `RAW_PAYLOAD=` alongside the invariant 32 character lowercase hexadecimal `MESSAGE_ID` and triggers a flight recorder lookbehind flush.
 
 ## Logging raw binary payloads
 
 Take advantage of native binary logging capabilities when diagnosing state corruption.
 
-Unlike text only loggers, the native wire protocol of `systemd-journald` accepts arbitrary length prefixed binary payloads via `sd_journal_sendv`. Wrap raw C++ structs, network packets, serialization headers, or memory snapshots using `journal::binary_payload` or `journal::as_binary_payload` without hex or base64 encoding overhead.
+Unlike text only loggers, the native wire protocol of `systemd-journald` accepts arbitrary length prefixed binary payloads via `sd_journal_sendv`. Wrap trivially copyable C++ structs, network packets, serialization headers, or `std::span<const std::byte>` buffers using `journal::as_binary_payload` or `journal::binary_payload` without hex or base64 encoding overhead.
 
-## Offline symbolization with addr2line
+## Offline symbolization and unit test capture
 
-Binary stack traces attached in `RAW_PAYLOAD=` contain raw machine instruction pointers.
+Binary stack traces attached in `RAW_PAYLOAD=` contain raw 64 bit machine instruction pointers captured into fixed stack buffers.
 
-Do not attempt to demangle or symbolize stack traces at runtime inside component boundaries. Offline tools such as `addr2line` or `llvm-addr2line` map the captured 64 bit addresses back to source files and function names against the debug binary.
+Do not attempt to demangle or symbolize stack traces at runtime inside component boundaries. Offline tools such as `addr2line` or `llvm-addr2line` map the captured addresses back to source files and function names against the binary.
+
+In unit tests that verify diagnostic emissions, redirect the consumer thread into memory with `journal::detail::set_record_sink`, synchronize using `journal::flush`, and restore the default sink with `journal::detail::reset_record_sink`.

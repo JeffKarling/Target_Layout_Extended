@@ -2,7 +2,17 @@
 
 ## Independent target isolation
 
-Every component in Target Layout is an independent CMake target with strict private and public boundaries. Agents must view physical boundaries as enablers for incremental adoption and localized optimization.
+Every component in Target Layout Extended is an independent CMake target with strict private and public boundaries. Agents must view physical boundaries as enablers for incremental adoption, clean encapsulation, and localized optimization.
+
+## Private helpers versus splitting a new sibling component
+
+Keep component boundaries sharp as responsibilities grow.
+
+**Private internal helpers.** When helper functions or classes are only used inside a single component, place `<helper>.hpp` and `<helper>.cpp` at the root of `targets/<name>/` outside the `PUBLIC FILE_SET` directory `targets/<name>/<name>/`, and register `<helper>.cpp` under `PRIVATE` in `target_sources()`. Because the header is excluded from the public file set, downstream targets cannot include it. Note that private helper headers placed at the component root still resolve via `#include <helper.hpp>` within the owning component because CMake registers the target root as a private include base path.
+
+**Splitting a new sibling target.** Whenever a helper type, schema, or algorithm needs to be called or linked by a second component, split it into its own physical directory `targets/<new_name>/` with its own public header, catalog, and unit test suite. Never reach across component directories to share private files.
+
+**Zero link time overhead in release builds.** Splitting functionality into fine grained static targets does not penalize release binaries because `target_properties.cmake` enables `INTERPROCEDURAL_OPTIMIZATION` when `ENABLE_IPO` is on, allowing the linker to inline across static archive boundaries.
 
 ## Private language standard adoption
 

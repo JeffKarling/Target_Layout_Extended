@@ -10,13 +10,27 @@ Both `target_properties.cmake` and `target_compile_options.cmake` must always be
 
 Omitting shared include files because of compilation issues is a severe anti pattern.
 
-Dropping `target_compile_options.cmake` completely removes optimization levels, debug formats, standard library hardening, and sanitizer instrumentation. The component then becomes an invisible blind spot in the build matrix.
+Dropping `target_compile_options.cmake` completely removes optimization levels, debug formats, stack canary protection `-fstack-protector-strong`, standard library bounds hardening `_GLIBCXX_ASSERTIONS` and `_LIBCPP_HARDENING_MODE_FAST` in custom release builds, and sanitizer instrumentation. The component then becomes an invisible blind spot in the build matrix.
 
 ## The local override pattern
 
-When a component encounters friction with global defaults, agents must retain the baseline files. Agents must apply minimal, surgical overrides directly on the specific target.
+When a component encounters friction with global defaults, agents must retain the baseline files. Agents must apply minimal, surgical overrides directly on the specific target after including `target_compile_options.cmake`.
 
-This practice preserves global optimizations, sanitizers, and hardening flags while addressing local technical constraints.
+Because compilers evaluate flags from left to right, appending an inverse flag on the target overrides the inherited global option while preserving all other optimizations, sanitizers, and hardening defines.
+
+## Restoring strict floating point semantics
+
+Custom release presets pass `-ffast-math` by default. Components that require strict IEEE 754 floating point behavior or NaN and infinity handling must append `-fno-fast-math` locally.
+
+```cmake
+include(${CMAKE_BINARY_DIR}/target_properties.cmake)
+include(${CMAKE_BINARY_DIR}/target_compile_options.cmake)
+
+# Restore strict IEEE 754 floating point semantics for this component
+target_compile_options(${DIR_NAME} PRIVATE
+        $<$<CONFIG:Clang_Release,Clang_RelWithDebInfo,GNU_Release>:-fno-fast-math>
+)
+```
 
 ## Applying targeted warning suppressions
 

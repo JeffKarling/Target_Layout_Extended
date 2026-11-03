@@ -2,15 +2,15 @@
 
 ## Rethrowing more than one exception across boundaries is a code smell
 
-Every physical component in this repository must maintain a clean `noexcept` boundary contract.
+Every operational and subsystem component in this repository must maintain a clean `noexcept` boundary contract.
 
-Rethrowing exceptions across a component boundary is a code smell. A focused physical component handles recoverable domain conditions internally and exposes a `noexcept` boundary returning `bool` or `std::optional`.
+Rethrowing exceptions across a component boundary is a code smell. A focused operational component handles recoverable domain conditions internally and exposes a `noexcept` boundary returning `bool` or `std::optional`. Pure data schema components such as generated Protobuf targets and fine grained value types follow standard C++ value semantics without wrapping every accessor in boundary loggers.
 
 ## Decoupling control flow from failure root causes
 
 When a component exposes multiple exception pathways or detailed error enums in its return type, it creates tight symbiosis between caller and callee. The upstream caller becomes coupled to callee internal failure hierarchies.
 
-If an upstream caller genuinely needs to branch on two different conditions, the component should split the operation into separate functions or split into smaller targets. Once a boundary function gives up, the upstream C++ caller only needs `false` or `std::nullopt` to steer control flow, while `systemd-journald` receives the exact failure root cause.
+If an upstream caller genuinely needs to branch on two different conditions, the component should split the operation into separate functions or split into smaller targets. Once a boundary function gives up, the upstream C++ caller only needs `false` or `std::nullopt` to steer control flow, while `systemd-journald` receives the exact failure root cause and flushed lookbehind breadcrumbs.
 
 ## Catalogs represent boundary contract failures
 
@@ -20,11 +20,11 @@ Catalog entries are reserved strictly for `noexcept` boundary failures handled b
 
 ## Automatic deduction for single entry components and explicit selection for multi entry components
 
-Each component defines a closed `struct catalog` aggregate and `inline constexpr catalog k_catalog{};` in its public header.
+Each operational component defines a closed `struct catalog` aggregate with at most eight `journal::catalog_entry` members and `inline constexpr catalog k_catalog{};` in its public header.
 
 **Single entry components.** When `struct catalog` contains only one `catalog_entry`, the `journal::single_entry_catalog` concept is satisfied at compile time. The boundary `catch` block calls `journal::catch_boundary_exception(k_catalog)` without naming the individual entry.
 
-**Multi entry components.** When `struct catalog` contains multiple `catalog_entry` fields, the compiler rejects `journal::catch_boundary_exception(k_catalog)`. Each boundary `catch` block must explicitly pass its fallback `catalog_entry`, and internal helpers can throw `journal::catalog_exception` to select a specific `catalog_entry` and capture the binary `std::stacktrace` before stack unwinding begins.
+**Multi entry components.** When `struct catalog` contains multiple `catalog_entry` fields, the compiler rejects `journal::catch_boundary_exception(k_catalog)`. Each boundary `catch` block must explicitly pass its fallback `catalog_entry`, and internal helpers can throw `journal::catalog_exception` to select a specific `catalog_entry` and capture up to 32 raw stack frame addresses into a fixed buffer before stack unwinding begins.
 
 ## Implementation pattern
 

@@ -12,40 +12,39 @@ Use this runbook to profile hot paths, apply zero-allocation optimizations, and 
 ## Step 1. Measure the starting baseline
 
 Always record the starting metrics before modifying any source code.
-Compile and run the target benchmark under the optimized release preset:
+Compile and run the target benchmark under an optimized custom release preset:
 
 ```bash
-cmake --build Build/Clang_Custom_Release --target <component>BENCH
-./Build/Clang_Custom_Release/targets/<component>/<component>BENCH/<component>BENCH
+cmake --build --preset Clang_Custom_Release --target <component>BENCH_run
 ```
 
-Record the starting numbers for wall clock latency, CPU cycles, retired instructions, and instructions per cycle.
+Record the starting numbers for wall clock latency, CPU cycles, retired instructions, and instructions per cycle. Note that `*_Custom_Release` presets include production hardening (`-fstack-protector-strong`, `_GLIBCXX_ASSERTIONS`, and `_LIBCPP_HARDENING_MODE_FAST`).
 
 ## Step 2. Profile bottlenecks using hardware counters
 
 Inspect the PMU metrics captured by `perf_scope`:
-* **High instruction count.** Indicates virtual dispatch overhead, redundant copies, or missing standard library inlining.
+* **High instruction count.** Indicates virtual dispatch overhead, redundant copies, per-iteration `.at(idx)` or `.subspan(idx)` bounds checks inside loops, or missing standard library inlining.
 * **Low IPC.** Indicates memory stalls, cache misses, or branch mispredictions.
 * **Branch misses.** Indicates unpredicted conditionals inside inner loops. Replace with lookup tables or arithmetic masking.
 * **Cache misses.** Indicates non-contiguous memory layouts. Reorder structs for cache line locality or use `std::span`.
 
-When deeper CPU instruction analysis is needed, run `cmake --build Build/Clang_Custom_Release --target perf_stat` or `perf_annotate`.
+When deeper whole-application CPU instruction analysis is needed, run `cmake --build --preset Clang_Custom_Release --target Perf_stat`, `Perf_record`, `Perf_report`, or `Perf_annotate` to inspect reports in `production_artifacts/profiling/perf/`.
 
 ## Step 3. Apply invariant preserving optimizations
 
 Refactor the component implementation in `targets/<component>/<component>.cpp`:
-* Replace intermediate container allocations with `std::views` pipelines.
+* Replace intermediate container allocations and manual index loops with `std::views` pipelines, `std::views::enumerate`, `std::views::iota`, and `std::ranges::transform`.
+* Slice `std::span` buffers once before a loop (`span.first(count)`) and iterate via `std::views::enumerate` or `std::ranges` algorithms so bounds checks under `_GLIBCXX_ASSERTIONS` and `_LIBCPP_HARDENING_MODE_FAST` are hoisted out of the hot loop body.
 * Pass contiguous memory slices via `std::span` to enable SIMD auto-vectorization.
 * Hoist invariant calculations and memory allocations out of hot loops.
 * Preserve public API contracts so downstream consumers remain unaffected.
 
 ## Step 4. Verify behavioral correctness under debug
 
-Run the entire unit test suite to ensure optimizations did not introduce functional defects:
+Run the unit test suite across both compilers to ensure optimizations did not introduce functional defects:
 
 ```bash
-cmake --build Build/Clang_Custom_Debug
-ctest --test-dir Build/Clang_Custom_Debug --output-on-failure
+./production_artifacts/build_all.sh custom debug
 ```
 
 Do not proceed to benchmark evaluation if any test fails.
@@ -55,8 +54,7 @@ Do not proceed to benchmark evaluation if any test fails.
 Recompile and execute the benchmark under optimized release:
 
 ```bash
-cmake --build Build/Clang_Custom_Release --target <component>BENCH
-./Build/Clang_Custom_Release/targets/<component>/<component>BENCH/<component>BENCH
+cmake --build --preset Clang_Custom_Release --target <component>BENCH_run
 ```
 
 Inspect the score report written to `production_artifacts/profiling/<component>_score_report.md`.
