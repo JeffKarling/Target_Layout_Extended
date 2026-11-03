@@ -30,6 +30,13 @@ jobs:
         with:
           key: static-analysis
 
+      - name: Verify mandatory angle bracket includes
+        run: |
+          if grep -rn '#include "' targets/; then
+            echo "Error: quoted #include directives found under targets/. Use angle brackets <...> only."
+            exit 1
+          fi
+
       - name: Run Clang-Tidy static analysis
         run: |
           cmake --preset Clang_Tidy
