@@ -4,16 +4,32 @@ This guide explains how to use `journal` when building a new component under Tar
 
 ## Mental model transition from spdlog
 
-In `spdlog`, logging is typically stream or format based string concatenation directed to console or file sinks.
+In `spdlog`, logging interpolates runtime variables into a formatted string on the calling thread before writing to console or file sinks.
 
-```cpp title="Traditional spdlog string formatting on caller thread"
-// spdlog pattern
+```cpp title="Traditional spdlog runtime string formatting on caller thread"
+// spdlog formats item_id and flags into a text buffer on the calling thread
 spdlog::info("Processing item {} with flags {:x}", item_id, flags);
 ```
 
-In `journal`, logging follows three distinct principles.
+In `journal`, `journal::log` intentionally does **not** accept format strings or runtime text interpolation arguments. Converting runtime integers, floats, and structs into formatted strings on the producer thread costs hundreds of nanoseconds and risks heap allocations. Instead, `journal` separates the static event description from the runtime variable state.
 
-1. **Structured, deferred binary ring buffer.** `journal` does zero string formatting on the calling thread. The call records raw pointers, hardware cycle timestamps, and binary payloads into a lock free ring buffer in roughly 30 nanoseconds.
+```cpp title="Equivalent zero-formatting journal call with runtime variables"
+struct item_context {
+    std::uint64_t item_id;
+    std::uint32_t flags;
+};
+
+// Static message string paired with raw binary runtime variables
+jrn::log(
+    jrn::severity::info,
+    jrn::message{"Processing item"},
+    jrn::as_binary_payload(item_context{.item_id = item_id, .flags = flags})
+);
+```
+
+This design follows three core principles.
+
+1. **Zero string formatting on the producer thread.** `journal::message` carries a static description while runtime variables are passed as raw bytes via `journal::as_binary_payload`. The producer copies the raw bytes and hardware cycle timestamp into the lock free ring buffer in roughly 30 nanoseconds without running `std::format` or `snprintf`.
 2. **Native systemd-journald integration.** Logs become structured systemd journal fields including `MESSAGE`, `PRIORITY`, `COMPONENT`, `CODE_FILE`, `CODE_LINE`, `RAW_PAYLOAD`, and `MESSAGE_ID`.
 3. **Compiler enforced component taxonomy.** Components do not manually declare logger names. The component name is deduced automatically from directory layout at compile time under the physical one name rule.
 
@@ -41,12 +57,18 @@ Diagnostic logs use `journal::log` with strongly typed attributes. Attributes ca
 ```cpp title="Order independent diagnostic logging"
 namespace jrn = target_layout_extended::journal;
 
-// Log plain text
+// Log static plain text
 jrn::log(jrn::severity::info, jrn::message{"Worker initialized"});
 
 // Arguments are order-independent
 jrn::log(jrn::message{"Cache lookup succeeded"}, jrn::severity::debug);
+
+// Attach a single runtime variable or struct without string formatting
+jrn::log(jrn::severity::debug, jrn::message{"Batch size"}, jrn::as_binary_payload(batch_count));
 ```
+
+!!! warning "Avoid constructing runtime std::string messages on hot paths"
+    Because `journal::message` wraps a `std::string_view` and copies up to 512 bytes into the ring slot during `journal::log`, cold error paths can pass a temporary string expression when needed. Never concatenate or format `std::string` objects on hot paths, as heap allocation and text formatting on the caller thread defeat the lock free ring buffer. Pass runtime variables through `journal::as_binary_payload` instead.
 
 ### Supported severity levels
 
