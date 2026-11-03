@@ -8,7 +8,7 @@ This guide walks through creating a complete production component with boundary 
 
 Create the component directory under `targets/<name>/`.
 
-```text
+```text title="Component directory layout"
 targets/<name>/
 ├── CMakeLists.txt
 ├── <name>.cpp
@@ -30,7 +30,7 @@ Every filename mirrors the directory name derived through `${DIR_NAME}`. The `<n
 
 Place the target definition in `targets/<name>/CMakeLists.txt`.
 
-```cmake
+```cmake title="targets/<name>/CMakeLists.txt"
 cmake_path(GET CMAKE_CURRENT_LIST_DIR FILENAME DIR_NAME)
 
 add_library(${DIR_NAME} STATIC)
@@ -66,7 +66,7 @@ Every operational component links `${PROJECT_NAME}::journal` as `PUBLIC` because
 
 Declare the public interface in `targets/<name>/<name>/<name>.hpp`.
 
-```cpp
+```cpp title="targets/<name>/<name>/<name>.hpp"
 #pragma once
 
 #include <span>
@@ -94,7 +94,7 @@ Public functions at subsystem boundaries are marked `noexcept` and return status
 
 Implement component logic in `targets/<name>/<name>.cpp`. Internal helpers throw standard or catalog exceptions freely, while boundary entry points catch and log them through the Lippincott handler.
 
-```cpp
+```cpp title="targets/<name>/<name>.cpp"
 #include <<name>/<name>.hpp>
 #include <stdexcept>
 
@@ -131,7 +131,7 @@ To capture stack frames before unwinding begins, internal helpers can throw `jou
 
 Document every catalog identifier in `targets/<name>/<name>.catalog`.
 
-```text
+```text title="targets/<name>/<name>.catalog"
 # systemd journald message catalog for component: <name>
 
 -- a1b2c3d4e5f60718293a4b5c6d7e8f90
@@ -149,8 +149,7 @@ The header and catalog file together form the static and runtime contract of the
 
 Place functional verification in `targets/<name>/<name>TEST/`.
 
-```cmake
-# targets/<name>/<name>TEST/CMakeLists.txt
+```cmake title="targets/<name>/<name>TEST/CMakeLists.txt"
 cmake_path(GET CMAKE_CURRENT_LIST_DIR FILENAME DIR_NAME)
 string(REGEX REPLACE "TEST$" "" COMPONENT_NAME ${DIR_NAME})
 
@@ -175,7 +174,7 @@ gtest_discover_tests(${DIR_NAME})
 
 Write test cases in `<name>TEST.cpp` covering both normal operation and boundary error containment.
 
-```cpp
+```cpp title="targets/<name>/<name>TEST/<name>TEST.cpp"
 #include <<name>/<name>.hpp>
 #include <gtest/gtest.h>
 #include <vector>
@@ -202,7 +201,7 @@ namespace {
 
 After scaffolding the files, run verification across both GNU GCC and LLVM Clang.
 
-```bash
+```bash title="Run compiler verification suites"
 ./production_artifacts/build_all.sh custom debug
 ./production_artifacts/build_all.sh default release
 ```

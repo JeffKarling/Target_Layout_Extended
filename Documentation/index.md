@@ -18,7 +18,7 @@ The project targets Linux and resolves every third party dependency through `pkg
 
 The component folder stays the single unit of ownership. Everything the extension adds lives inside it. Consider the `database_manager` and `tbb_algos` components under `targets/`.
 
-```text
+```text title="Extended component directory tree"
 targets/
 ├── database_manager/
 │   ├── CMakeLists.txt
@@ -63,7 +63,7 @@ Because `struct catalog` holds `journal::catalog_entry` fields and lives in the 
 
 Repeating hardening, sanitizer, analysis and optimization flags in every component would duplicate configuration across directories. **Target Layout Extended** shares them through two plain CMake scripts that each component includes after creating its target.
 
-```cmake
+```cmake title="targets/<name>/CMakeLists.txt"
 cmake_path(GET CMAKE_CURRENT_LIST_DIR FILENAME DIR_NAME)
 
 add_library(${DIR_NAME} STATIC)
@@ -83,7 +83,7 @@ The scripts are not functions. They operate on whatever `${DIR_NAME}` holds at t
 
 Base **Target Layout** explains why code generation belongs in its own component directory. In **Target Layout Extended**, `targets/item_proto/` validates this pattern with Google Protobuf.
 
-```cmake
+```cmake title="targets/item_proto/CMakeLists.txt"
 cmake_path(GET CMAKE_CURRENT_LIST_DIR FILENAME DIR_NAME)
 
 add_library(${DIR_NAME} STATIC)
@@ -140,7 +140,7 @@ target_link_libraries(${DIR_NAME} PUBLIC PkgConfig::protobuf)
 
 The composition root in `targets/app/` has no special naming exceptions.
 
-```cmake
+```cmake title="targets/app/CMakeLists.txt"
 cmake_path(GET CMAKE_CURRENT_LIST_DIR FILENAME DIR_NAME)
 
 add_executable(${DIR_NAME} ${DIR_NAME}.cpp)
@@ -164,7 +164,7 @@ It derives `app` from its folder name, applies the shared target properties and 
 
 Because every component is a one to one CMake target, `cmake/graphviz.cmake` exposes a built in `graphviz` target that exports the physical architecture of the repository.
 
-```bash
+```bash title="Generate architecture graph"
 cmake --build --preset GNU_Custom_Debug --target graphviz
 ```
 
