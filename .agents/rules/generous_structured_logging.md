@@ -14,6 +14,8 @@ High volume `debug` logs remain inside the ring buffer with zero `systemd-journa
 
 Runtime controllers can adjust per-level strides, congestion thresholds, or per-component `debug` microscope overrides at any time via `journal::activate_policy` and `journal::make_component_override`.
 
+The `journal` target follows a strict last caller wins model. It must never embed IPC, networking, or authentication logic. External interfaces must reside in separate higher level components that link `${PROJECT_NAME}::journal`. Those adapters can expose POSIX signals or protocols like Varlink, D-Bus, and HTTP REST.
+
 ## All eight Syslog severity classifications
 
 Use the strong scoped enumeration `journal::severity` covering all eight standard Syslog levels from `emergency`, `alert`, `critical`, `error`, `warning`, `notice`, `info`, to `debug`.

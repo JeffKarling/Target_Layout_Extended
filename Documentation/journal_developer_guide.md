@@ -197,12 +197,12 @@ The stack trace is frozen at the throw site before stack unwinding begins.
 
 ## Flight recorder and runtime policies
 
-By default, `journal` operates in **flight recorder mode**.
+By default, `journal` operates in flight recorder mode.
 
-* **Ring buffered debug logs.** High volume `debug` records stay in memory inside the 2048 slot ring buffer and are not written to `journald`.
-* **Automatic lookbehind on fault.** When a `warning`, `error`, or higher severity failure occurs, `journal` automatically flushes recent skipped breadcrumbs with `LOG_LOOKBEHIND=1` ahead of the failure record.
-
-If external controls need to modify strides or enable verbose debug logging for a specific component, use `journal::activate_policy`.
+* **Default flight recorder behavior.** High volume `debug` records stay in the 2048 slot ring buffer with zero `systemd-journald` I/O traffic. When a record at or above `lookbehind_trigger` occurs, recent breadcrumbs flush automatically with `LOG_LOOKBEHIND=1` ahead of the fault record.
+* **Public policy control surface.** The public header exposes `journal::policy` and `journal::component_override` alongside five control functions. Use `journal::is_valid_policy` and `journal::activate_policy` to validate and apply candidate configurations. Call `journal::active_policy` and `journal::statistics_snapshot` to inspect state. Call `journal::reset_default_policy` to restore flight recorder defaults.
+* **External adapter capability.** The core logging engine uses a protocol neutral last caller wins contract. External control belongs in higher level adapter components. Applications can use `targets/journal_signal_adapter` for POSIX signals or dedicated services for Varlink, D-Bus, and HTTP REST.
+* **Technical reference link.** See [journal_policy_example.md](journal_policy_example.md) for full struct layouts and adapter component examples.
 
 ```cpp title="Activating a per-component debug microscope policy"
 jrn::policy policy{};

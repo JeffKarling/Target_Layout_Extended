@@ -1,0 +1,10 @@
+# systemd journald message catalog for component: journal_signal_adapter
+
+-- ba2938d457754bafa974bf0e5523af8e
+Subject: Signal adapter failure caught at component boundary
+Defined-By: target_layout_extended::journal_signal_adapter
+Support: https://github.com/JeffKarling/Target_Layout_Extended
+
+The journal_signal_adapter boundary firewall caught an unexpected fault while
+configuring or executing the background signal listener thread.
+
