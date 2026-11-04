@@ -1,10 +1,10 @@
 # Boundary exceptions and catalog contract logging
 
-## Rethrowing more than one exception across boundaries is a code smell
+## Component boundaries catch exceptions and return boolean status
 
 Every operational and subsystem component in this repository must maintain a clean `noexcept` boundary contract.
 
-Rethrowing exceptions across a component boundary is a code smell. A focused operational component handles recoverable domain conditions internally and exposes a `noexcept` boundary returning `bool` or `std::optional`. Pure data schema components such as generated Protobuf targets and fine grained value types follow standard C++ value semantics without wrapping every accessor in boundary loggers.
+Exceptions must never escape across a component boundary. The public interface catches every unhandled exception and converts it into a boolean `false` or `std::nullopt`. A focused operational component handles recoverable domain conditions internally and shields upper layers from callee failure mechanisms. Pure data schema components such as generated Protobuf targets and fine grained value types follow standard C++ value semantics without boundary exception firewalls.
 
 ## Decoupling control flow from failure root causes
 
@@ -24,7 +24,15 @@ Each operational component defines a closed `struct catalog` aggregate with at m
 
 **Single entry components.** When `struct catalog` contains only one `catalog_entry`, the `journal::single_entry_catalog` concept is satisfied at compile time. The boundary `catch` block calls `journal::catch_boundary_exception(k_catalog)` without naming the individual entry.
 
-**Multi entry components.** When `struct catalog` contains multiple `catalog_entry` fields, the compiler rejects `journal::catch_boundary_exception(k_catalog)`. Each boundary `catch` block must explicitly pass its fallback `catalog_entry`, and internal helpers can throw `journal::catalog_exception` to select a specific `catalog_entry` and capture up to 32 raw stack frame addresses into a fixed buffer before stack unwinding begins.
+**Multi entry components.** When `struct catalog` contains multiple `catalog_entry` fields, the compiler rejects `journal::catch_boundary_exception(k_catalog)`. Each boundary `catch` block must explicitly pass a fallback `catalog_entry`. Any standard exception or third party error caught at the boundary logs against this fallback entry. To attribute a specific failure catalog entry instead of the fallback, internal helpers throw `journal::catalog_exception`. This also freezes up to 32 raw stack frame addresses at the throw point before stack unwinding begins.
+
+## Supporting unexpected fault nets and granular internal failure paths
+
+This architecture accommodates two distinct exception philosophies without compromising the public contract.
+
+**Unexpected fault safety nets.** When exceptions represent only unexpected bugs or environment failures, a component defines a single catalog entry. Standard code paths return domain values, and the boundary firewall safely intercepts any unexpected exception that slips through.
+
+**Granular internal failure routing.** When deep internal helpers must abort on specific contract violations, they throw `journal::catalog_exception`. This avoids threading error codes across helper layers. The exact failure UUID routes directly to the boundary, and raw stack frames freeze before unwinding begins.
 
 ## Implementation pattern
 

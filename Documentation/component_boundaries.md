@@ -4,6 +4,32 @@ In a system built around physical components, the boundary between components ac
 
 **Target Layout Extended** demonstrates two runtime practices at service and subsystem walls. First, exceptions thrown inside private internals are caught at the component boundary proxy before crossing into another CMake target. Second, boundary failures and internal diagnostics are recorded to `systemd-journald` through `targets/journal/`.
 
+## Architectural rationale and why not standard text logging
+
+A developer encountering this architecture might naturally ask why the project does not simply use `spdlog` or plain text syslog. Standard text logging frameworks are familiar, but they conflict with John Lakos physical component boundaries in three fundamental ways.
+
+### The breakdown of traditional logging in component architectures
+
+**Unbounded runtime string allocations.** Libraries like `spdlog` format arbitrary strings on the heap inside failing processes. When a failure stems from memory exhaustion or corrupt state, heap formatting in the failure path is unreliable. It can easily induce secondary crashes.
+
+**Absence of physical contracts.** Standard loggers have no concept of a physical component contract. Developers sprinkle ad hoc log strings across private implementation files. This leaves callers and operators with no documented failure taxonomy.
+
+**Violating boundary decoupling.** To communicate root causes to upstream callers, traditional designs either propagate exception hierarchies or return elaborate error enums. Both practices violate Lakos principles by creating tight physical coupling between callers and callee internal error types.
+
+### The symbiosis of journald and physical component boundaries
+
+`systemd-journald` is not an arbitrary logging sink in this repository. It provides the exact operating system primitives required to enforce physical component isolation.
+
+Message catalogs are a native feature of `systemd-journald`, not an internal naming convention invented by this project. In standard systemd, a message catalog is an indexed database mapping 128 bit `MESSAGE_ID` UUIDs to diagnostic documentation and operator runbooks. When operators run `journalctl -x`, the journal automatically renders this documentation alongside the event. Target Layout Extended harnesses this built-in Linux capability to formalize Lakos component boundaries.
+
+**Dual channel decoupling.** The architecture separates application control flow from observability telemetry. Upstream C++ callers receive a clean boolean `false` or `std::nullopt`, preserving strict architectural decoupling. Concurrently, the runtime environment transmits structured diagnostic fields to `systemd-journald`.
+
+**The catalog as a companion contract.** In Lakos physical design, a component is an atomic unit. In this repository, each operational directory contains `<name>.hpp` as the compile time contract and `<name>.catalog` as the runtime failure contract. Both live together under the physical one name rule. An engineer reads the header to see what the component does and reads the catalog to see how it can fail.
+
+**In memory flight recorder with automatic lookbehind.** High volume debug traces remain inside a 2048 slot ring buffer with zero disk I/O. When an unhandled boundary exception occurs, the consumer thread automatically flushes recent skipped debug breadcrumbs ahead of the fault record.
+
+**Pre unwinding binary stack capture.** Standard logging frameworks capture call stacks after unwinding reaches an outer catch block. They also frequently parse DWARF tables on the critical path. The journal infrastructure captures raw 64 bit instruction pointers directly into stack buffers at the throw site before unwinding begins. This enables zero overhead symbolization offline.
+
 ## Exception boundaries and when noexcept applies
 
 Inside a component's `.cpp` file, standard C++ exceptions and throwing standard library or third party calls are often convenient. However, allowing exceptions to escape across subsystem boundaries introduces coupling between targets.

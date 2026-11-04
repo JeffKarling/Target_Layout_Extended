@@ -59,6 +59,10 @@ namespace {
 
     struct empty_catalog {};
 
+    struct nine_entry_catalog {
+        jrn::catalog_entry e1{}, e2{}, e3{}, e4{}, e5{}, e6{}, e7{}, e8{}, e9{};
+    };
+
     struct sample_binary_snapshot {
         std::uint64_t magic{0xCAFEBABE12345678ULL};
         std::uint32_t sequence{42U};
@@ -146,6 +150,7 @@ static_assert(!jrn::single_entry_catalog<empty_catalog>);
 static_assert(jrn::single_entry_catalog<jrn::catalog>);
 static_assert(jrn::single_entry_catalog<single_component_catalog>);
 static_assert(!jrn::single_entry_catalog<multi_component_catalog>);
+static_assert(!jrn::is_valid_catalog(nine_entry_catalog{}));
 static_assert(jrn::is_valid_catalog(jrn::k_catalog));
 static_assert(jrn::is_valid_catalog(k_single_catalog));
 static_assert(jrn::is_valid_catalog(k_multi_catalog));
