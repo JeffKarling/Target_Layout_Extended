@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <system_error>
 
-namespace target_layout_extended::journal {
+namespace tle::journal {
 
     namespace detail {
 
@@ -118,4 +118,4 @@ namespace target_layout_extended::journal {
         return false;
     }
 
-} // namespace target_layout_extended::journal
+} // namespace tle::journal

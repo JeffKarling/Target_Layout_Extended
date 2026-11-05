@@ -7,16 +7,16 @@
 #include <system_error>
 #include <vector>
 
-namespace dm = target_layout_extended::database_manager;
+namespace dm = tle::database_manager;
 
-static_assert(target_layout_extended::journal::is_valid_catalog(dm::k_catalog));
-static_assert(!target_layout_extended::journal::single_entry_catalog<dm::catalog>);
+static_assert(tle::journal::is_valid_catalog(dm::k_catalog));
+static_assert(!tle::journal::single_entry_catalog<dm::catalog>);
 
 TEST(DatabaseManagerTest, CatalogIdsAreValidHexUuids) {
-    EXPECT_TRUE(target_layout_extended::journal::is_valid_message_id(dm::k_catalog.k_init_failed.message_id));
-    EXPECT_TRUE(target_layout_extended::journal::is_valid_message_id(dm::k_catalog.k_add_item_failed.message_id));
-    EXPECT_TRUE(target_layout_extended::journal::is_valid_message_id(dm::k_catalog.k_save_failed.message_id));
-    EXPECT_TRUE(target_layout_extended::journal::is_valid_message_id(dm::k_catalog.k_load_failed.message_id));
+    EXPECT_TRUE(tle::journal::is_valid_message_id(dm::k_catalog.k_init_failed.message_id));
+    EXPECT_TRUE(tle::journal::is_valid_message_id(dm::k_catalog.k_add_item_failed.message_id));
+    EXPECT_TRUE(tle::journal::is_valid_message_id(dm::k_catalog.k_save_failed.message_id));
+    EXPECT_TRUE(tle::journal::is_valid_message_id(dm::k_catalog.k_load_failed.message_id));
 }
 
 TEST(DatabaseManagerTest, AddRetrieveAndSaveItemsWorks) {
@@ -27,7 +27,7 @@ TEST(DatabaseManagerTest, AddRetrieveAndSaveItemsWorks) {
     dm::database_store db;
     ASSERT_TRUE(db.initialize(test_db));
 
-    target_layout_extended::Item item;
+    tle::Item item;
     item.set_id("ID_001");
     item.set_name("Test Item");
     item.set_value(100.50);
@@ -50,7 +50,7 @@ TEST(DatabaseManagerTest, BoundaryCatchesInvalidInputsWithoutThrowing) {
     dm::database_store db;
     EXPECT_FALSE(db.initialize(""));
 
-    target_layout_extended::Item empty_id_item;
+    tle::Item empty_id_item;
     empty_id_item.set_name("Missing ID");
     EXPECT_FALSE(db.add_item(empty_id_item));
     EXPECT_FALSE(db.save_to("/non_existent_root_dir_xyz/db.pb"));
@@ -65,7 +65,7 @@ TEST(DatabaseManagerTest, FactoryOpenAndMoveSemanticsWork) {
     ASSERT_TRUE(maybe_store.has_value());
     EXPECT_TRUE(maybe_store->is_open());
 
-    target_layout_extended::Item item;
+    tle::Item item;
     item.set_id("ID_OPEN_01");
     item.set_name("Open Item");
     item.set_value(42.0);
@@ -97,13 +97,13 @@ TEST(DatabaseManagerTest, ViewItemsInspectsUnderLockAndRangesFindUpdatesExisting
     auto store = dm::database_store::open(test_db);
     ASSERT_TRUE(store.has_value());
 
-    target_layout_extended::Item item1;
+    tle::Item item1;
     item1.set_id("ITEM_RANGES_01");
     item1.set_name("Initial Name");
     item1.set_value(10.0);
     EXPECT_TRUE(store->add_item(item1));
 
-    target_layout_extended::Item item1_updated;
+    tle::Item item1_updated;
     item1_updated.set_id("ITEM_RANGES_01");
     item1_updated.set_name("Updated Name");
     item1_updated.set_value(99.0);

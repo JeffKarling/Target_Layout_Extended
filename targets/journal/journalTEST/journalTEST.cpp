@@ -32,7 +32,7 @@
 #include <vector>
 
 namespace {
-    namespace jrn = target_layout_extended::journal;
+    namespace jrn = tle::journal;
 
     struct single_component_catalog {
         jrn::catalog_entry k_default_failure{

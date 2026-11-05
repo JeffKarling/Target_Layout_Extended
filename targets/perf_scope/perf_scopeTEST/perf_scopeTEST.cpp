@@ -8,7 +8,7 @@
 #include <system_error>
 #include <vector>
 
-namespace ps = target_layout_extended::perf_scope;
+namespace ps = tle::perf_scope;
 
 TEST(PerfScopeTest, MeasuresHotWorkloadMetrics) {
     std::vector<int> values(1024U, 3);

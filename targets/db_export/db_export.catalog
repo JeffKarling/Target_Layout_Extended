@@ -2,7 +2,7 @@
 
 -- 8e4c9201b7a34d568f120c93e5d7b301
 Subject: Database snapshot export failure caught at component boundary
-Defined-By: target_layout_extended::db_export
+Defined-By: tle::db_export
 Support: https://github.com/JeffKarling/Target_Layout_Extended
 
 The db_export::format_database_snapshot boundary proxy caught an exception when

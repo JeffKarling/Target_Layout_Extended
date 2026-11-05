@@ -18,10 +18,10 @@
 #include <utility>
 // IWYU pragma: no_include <stdexcept>
 
-namespace target_layout_extended::perf_scope {
+namespace tle::perf_scope {
 
     namespace {
-        namespace jrn = target_layout_extended::journal;
+        namespace jrn = tle::journal;
 
         inline constexpr jrn::catalog_entry k_baseline_io_error{
             .message_id = "9b2e5a11c4d74f08a6123e89f1b4d002",
@@ -385,4 +385,4 @@ namespace target_layout_extended::perf_scope {
         }
     }
 
-} // namespace target_layout_extended::perf_scope
+} // namespace tle::perf_scope

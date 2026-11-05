@@ -6,7 +6,7 @@
 #include <thread>
 #include <journal/journal.hpp>
 
-namespace target_layout_extended::journal_signal_adapter {
+namespace tle::journal_signal_adapter {
 
     struct catalog {
         journal::catalog_entry k_adapter_fault{
@@ -62,4 +62,4 @@ namespace target_layout_extended::journal_signal_adapter {
         bool _signals_blocked{false};
     };
 
-} // namespace target_layout_extended::journal_signal_adapter
+} // namespace tle::journal_signal_adapter

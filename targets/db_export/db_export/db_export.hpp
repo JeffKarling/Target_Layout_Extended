@@ -8,7 +8,7 @@
 #include <string>
 #include <journal/journal.hpp>
 
-namespace target_layout_extended::db_export {
+namespace tle::db_export {
 
     struct catalog {
         journal::catalog_entry k_export_failed{
@@ -44,4 +44,4 @@ namespace target_layout_extended::db_export {
         const std::filesystem::path& db_path
     ) noexcept -> std::optional<std::string>;
 
-} // namespace target_layout_extended::db_export
+} // namespace tle::db_export

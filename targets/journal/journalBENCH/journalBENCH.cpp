@@ -12,8 +12,8 @@
 #include <system_error>
 
 int main() {
-  namespace ps = target_layout_extended::perf_scope;
-  namespace jrn = target_layout_extended::journal;
+  namespace ps = tle::perf_scope;
+  namespace jrn = tle::journal;
 
   // Keep the benchmark off the real journal and make sure the consumer thread
   // exists before timing.

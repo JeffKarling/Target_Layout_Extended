@@ -162,7 +162,7 @@ The following pattern illustrates how a network or IPC component decodes key val
 #include <map>
 #include <string>
 
-namespace jrn = target_layout_extended::journal;
+namespace jrn = tle::journal;
 
 auto apply_policy_from_fields(
     const std::map<std::string, std::string>& fields

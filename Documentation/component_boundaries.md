@@ -209,7 +209,7 @@ addr2line -e ./Build/Clang_Custom_Debug/targets/journal/journalTEST/journalTEST 
 The symbolizer prints the demangled function signature along with the file and line number.
 
 ```text title="Demangled source locations"
-target_layout_extended::journal::detail::capture_current_stacktrace(std::span<unsigned long, 18446744073709551615ul>)
+tle::journal::detail::capture_current_stacktrace(std::span<unsigned long, 18446744073709551615ul>)
 targets/journal/journal.cpp:218
 JournalTest_EmitsTextAndBinaryLogsAcrossAllSyslogSeveritiesInAnyArgumentOrder_Test::TestBody()
 targets/journal/journalTEST/journalTEST.cpp:214
@@ -232,7 +232,7 @@ In **Target Layout Extended**, each operational component stores its `<name>.cat
 
 -- 4c8a1023e5b94d719f012a34c8b5e101
 Subject: Database initialization failure caught at component boundary
-Defined-By: target_layout_extended::database_manager
+Defined-By: tle::database_manager
 Support: https://github.com/JeffKarling/Target_Layout_Extended
 
 The database_store::initialize boundary proxy caught an exception from internal

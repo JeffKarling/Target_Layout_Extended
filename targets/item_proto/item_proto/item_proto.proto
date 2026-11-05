@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package target_layout_extended;
+package tle;
 
 message Item {
     string id = 1;

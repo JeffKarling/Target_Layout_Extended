@@ -2,7 +2,7 @@
 
 -- 7a1d4f90e3c84a21b5809e41d2a7c001
 Subject: Unhandled exception caught at component boundary
-Defined-By: target_layout_extended::journal
+Defined-By: tle::journal
 Support: https://github.com/JeffKarling/Target_Layout_Extended
 
 An exception thrown inside a component's private implementation reached a

@@ -22,7 +22,7 @@
 #include <thread>
 #include <type_traits>
 
-namespace target_layout_extended::journal {
+namespace tle::journal {
 
     namespace {
         inline constexpr std::uint8_t k_max_severity_index = 7U;
@@ -932,4 +932,4 @@ namespace target_layout_extended::journal {
         };
     }
 
-} // namespace target_layout_extended::journal
+} // namespace tle::journal

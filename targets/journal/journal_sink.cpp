@@ -14,7 +14,7 @@
 #include <string_view>
 #include <system_error>
 
-namespace target_layout_extended::journal {
+namespace tle::journal {
 
     static_assert(to_syslog_priority(severity::emergency) == LOG_EMERG);
     static_assert(to_syslog_priority(severity::alert) == LOG_ALERT);
@@ -285,4 +285,4 @@ namespace target_layout_extended::journal {
 
     } // namespace detail
 
-} // namespace target_layout_extended::journal
+} // namespace tle::journal

@@ -5,7 +5,7 @@
 #include <vector>
 #include <journal/journal.hpp>
 
-namespace target_layout_extended::tbb_algos {
+namespace tle::tbb_algos {
 
     struct catalog {
         journal::catalog_entry k_parallel_execution_failed{
@@ -27,4 +27,4 @@ namespace target_layout_extended::tbb_algos {
         std::size_t inner_iterations = k_default_trig_iterations
     ) noexcept -> bool;
 
-} // namespace target_layout_extended::tbb_algos
+} // namespace tle::tbb_algos

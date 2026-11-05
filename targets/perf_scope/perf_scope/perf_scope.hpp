@@ -9,7 +9,7 @@
 #include <string>
 #include <string_view>
 
-namespace target_layout_extended::perf_scope {
+namespace tle::perf_scope {
 
     namespace detail {
         void record_workload_exception() noexcept;
@@ -126,4 +126,4 @@ namespace target_layout_extended::perf_scope {
         const score_evaluation& evaluation
     ) noexcept -> std::string;
 
-} // namespace target_layout_extended::perf_scope
+} // namespace tle::perf_scope

@@ -108,7 +108,7 @@ Catalog entries are reserved strictly for `noexcept` boundary failures caught by
 Declare the closed `struct catalog` in `targets/<name>/<name>/<name>.hpp`:
 
 ```cpp
-namespace target_layout_extended::<name> {
+namespace tle::<name> {
     struct catalog {
         journal::catalog_entry k_boundary_fault{
             .message_id = "51a3b901c2d44f6e87a213098df24103",
@@ -117,14 +117,14 @@ namespace target_layout_extended::<name> {
         };
     };
     inline constexpr catalog k_catalog{};
-} // namespace target_layout_extended::<name>
+} // namespace tle::<name>
 ```
 
 ## Step 4. Add comprehensive unit tests
 
 Scaffold `targets/<name>/<name>TEST/` before completing the implementation.
 Add unit tests covering:
-* Compile time `static_assert(target_layout_extended::journal::is_valid_catalog(k_catalog));`.
+* Compile time `static_assert(tle::journal::is_valid_catalog(k_catalog));`.
 * Typical valid inputs and happy paths.
 * Boundary conditions and edge cases.
 * Invalid inputs caught safely without leaking exceptions.

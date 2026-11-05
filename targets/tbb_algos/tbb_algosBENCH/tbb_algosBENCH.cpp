@@ -9,8 +9,8 @@
 #include <vector>
 
 int main() {
-    namespace ps = target_layout_extended::perf_scope;
-    namespace ta = target_layout_extended::tbb_algos;
+    namespace ps = tle::perf_scope;
+    namespace ta = tle::tbb_algos;
 
     std::vector<double> workload_data(256U, 1.25);
 

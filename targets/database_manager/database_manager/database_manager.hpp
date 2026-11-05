@@ -8,7 +8,7 @@
 #include <item_proto/item_proto.pb.h>
 #include <journal/journal.hpp>
 
-namespace target_layout_extended::database_manager {
+namespace tle::database_manager {
 
     // Public catalog IDs documented in targets/database_manager/database_manager.catalog.
     struct catalog {
@@ -69,4 +69,4 @@ namespace target_layout_extended::database_manager {
         mutable std::mutex _db_mutex;
     };
 
-} // namespace target_layout_extended::database_manager
+} // namespace tle::database_manager

@@ -11,7 +11,7 @@
 #include <string>
 #include <utility>
 
-namespace target_layout_extended::database_manager {
+namespace tle::database_manager {
 
     database_store::database_store(std::filesystem::path db_path) noexcept
         : _db_path(std::move(db_path)) {
@@ -162,4 +162,4 @@ namespace target_layout_extended::database_manager {
         }
     }
 
-} // namespace target_layout_extended::database_manager
+} // namespace tle::database_manager

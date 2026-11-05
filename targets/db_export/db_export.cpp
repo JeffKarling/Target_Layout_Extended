@@ -5,7 +5,7 @@
 #include <sstream>
 #include <stdexcept>
 
-namespace target_layout_extended::db_export {
+namespace tle::db_export {
 
     auto format_database_snapshot(
         const std::filesystem::path& db_path
@@ -32,4 +32,4 @@ namespace target_layout_extended::db_export {
         }
     }
 
-} // namespace target_layout_extended::db_export
+} // namespace tle::db_export

@@ -55,7 +55,7 @@ Include the public header in your code using angle brackets.
 Diagnostic logs use `journal::log` with strongly typed attributes. Attributes can be passed in any order.
 
 ```cpp title="Order independent diagnostic logging"
-namespace jrn = target_layout_extended::journal;
+namespace jrn = tle::journal;
 
 // Log static plain text
 jrn::log(jrn::severity::info, jrn::message{"Worker initialized"});
@@ -128,7 +128,7 @@ Instead of writing custom catch blocks, every component defines a `.catalog` fil
 Declare the catalog struct in `targets/<name>/<name>/<name>.hpp`.
 
 ```cpp title="targets/<name>/<name>/<name>.hpp"
-namespace target_layout_extended::<name> {
+namespace tle::<name> {
 
     struct catalog {
         journal::catalog_entry k_boundary_fault{
@@ -139,7 +139,7 @@ namespace target_layout_extended::<name> {
     };
     inline constexpr catalog k_catalog{};
 
-} // namespace target_layout_extended::<name>
+} // namespace tle::<name>
 ```
 
 ### Step 2. Document catalog entry in catalog file

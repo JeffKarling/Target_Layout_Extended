@@ -17,7 +17,7 @@
 #include <string_view>
 #include <type_traits>
 
-namespace target_layout_extended::journal {
+namespace tle::journal {
 
     // The 8 standard RFC 5424 and Syslog numerical severity classifications.
     enum class severity : std::uint8_t {
@@ -566,4 +566,4 @@ namespace target_layout_extended::journal {
         return catch_boundary_exception(only_entry, location);
     }
 
-} // namespace target_layout_extended::journal
+} // namespace tle::journal

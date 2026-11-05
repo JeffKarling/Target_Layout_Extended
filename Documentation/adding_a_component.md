@@ -72,7 +72,7 @@ Declare the public interface in `targets/<name>/<name>/<name>.hpp`.
 #include <span>
 #include <journal/journal.hpp>
 
-namespace target_layout_extended::<name> {
+namespace tle::<name> {
 
     struct catalog {
         journal::catalog_entry k_execution_failed{
@@ -85,7 +85,7 @@ namespace target_layout_extended::<name> {
 
     [[nodiscard]] auto process_data(std::span<int> values) noexcept -> bool;
 
-} // namespace target_layout_extended::<name>
+} // namespace tle::<name>
 ```
 
 Public functions at subsystem boundaries are marked `noexcept` and return status values such as `bool` or `std::optional`. Generate the 32 character lowercase hexadecimal UUID using `systemd-id128 new` or `journalctl --new-id128`.
@@ -98,7 +98,7 @@ Implement component logic in `targets/<name>/<name>.cpp`. Internal helpers throw
 #include <<name>/<name>.hpp>
 #include <stdexcept>
 
-namespace target_layout_extended::<name> {
+namespace tle::<name> {
 
     namespace {
         void validate_inputs(std::span<int> values) {
@@ -120,7 +120,7 @@ namespace target_layout_extended::<name> {
         }
     }
 
-} // namespace target_layout_extended::<name>
+} // namespace tle::<name>
 ```
 
 Because `struct catalog` contains exactly one entry, `catch_boundary_exception(k_catalog)` selects that entry at compile time. For components with multiple catalog entries, pass the specific fallback entry such as `catch_boundary_exception(k_catalog.k_execution_failed)`.
@@ -136,7 +136,7 @@ Document every catalog identifier in `targets/<name>/<name>.catalog`.
 
 -- a1b2c3d4e5f60718293a4b5c6d7e8f90
 Subject: Workload execution failure caught at component boundary
-Defined-By: target_layout_extended::<name>
+Defined-By: tle::<name>
 Support: https://github.com/JeffKarling/Target_Layout_Extended
 
 The process_data boundary proxy caught an exception during internal workload
@@ -181,7 +181,7 @@ Write test cases in `<name>TEST.cpp` covering both normal operation and boundary
 
 namespace {
 
-    namespace tested = target_layout_extended::<name>;
+    namespace tested = tle::<name>;
 
     TEST(NameTest, ProcessesValidInputs) {
         std::vector<int> numbers{1, 2, 3};

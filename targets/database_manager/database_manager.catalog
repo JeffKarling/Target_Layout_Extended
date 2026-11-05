@@ -2,7 +2,7 @@
 
 -- 4c8a1023e5b94d719f012a34c8b5e101
 Subject: Database initialization failure caught at component boundary
-Defined-By: target_layout_extended::database_manager
+Defined-By: tle::database_manager
 Support: https://github.com/JeffKarling/Target_Layout_Extended
 
 The database_store::initialize boundary proxy caught an exception from internal
@@ -11,7 +11,7 @@ could not be parsed.
 
 -- 4c8a1023e5b94d719f012a34c8b5e102
 Subject: Item insertion failure caught at component boundary
-Defined-By: target_layout_extended::database_manager
+Defined-By: tle::database_manager
 Support: https://github.com/JeffKarling/Target_Layout_Extended
 
 The database_store::add_item boundary proxy caught an exception from internal
@@ -20,7 +20,7 @@ allocation failed.
 
 -- 4c8a1023e5b94d719f012a34c8b5e103
 Subject: Database serialization failure caught at component boundary
-Defined-By: target_layout_extended::database_manager
+Defined-By: tle::database_manager
 Support: https://github.com/JeffKarling/Target_Layout_Extended
 
 The database_store::save_to boundary proxy caught an exception during internal
@@ -29,7 +29,7 @@ lacks write permission, or failed during stream serialization.
 
 -- 4c8a1023e5b94d719f012a34c8b5e104
 Subject: Database deserialization failure caught at component boundary
-Defined-By: target_layout_extended::database_manager
+Defined-By: tle::database_manager
 Support: https://github.com/JeffKarling/Target_Layout_Extended
 
 The database_store::load boundary proxy caught an exception when internal file

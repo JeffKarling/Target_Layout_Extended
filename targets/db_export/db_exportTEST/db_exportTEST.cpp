@@ -9,11 +9,11 @@
 #include <ranges>
 #include <vector>
 
-namespace dm = target_layout_extended::database_manager;
-namespace de = target_layout_extended::db_export;
+namespace dm = tle::database_manager;
+namespace de = tle::db_export;
 
-static_assert(target_layout_extended::journal::single_entry_catalog<de::catalog>);
-static_assert(target_layout_extended::journal::is_valid_catalog(de::k_catalog));
+static_assert(tle::journal::single_entry_catalog<de::catalog>);
+static_assert(tle::journal::is_valid_catalog(de::k_catalog));
 
 TEST(DbExportTest, FormatsSavedDatabaseSnapshot) {
     std::filesystem::path const test_db = "test_export.pb";
@@ -23,7 +23,7 @@ TEST(DbExportTest, FormatsSavedDatabaseSnapshot) {
     dm::database_store store;
     ASSERT_TRUE(store.initialize(test_db));
 
-    target_layout_extended::Item item;
+    tle::Item item;
     item.set_id("EXP_01");
     item.set_name("Exported Item");
     item.set_value(77.0);
@@ -38,17 +38,17 @@ TEST(DbExportTest, FormatsSavedDatabaseSnapshot) {
 }
 
 TEST(DbExportTest, FormatsItemRecordsFromRangesViewWithoutAllocatingContainer) {
-    target_layout_extended::Item item1;
+    tle::Item item1;
     item1.set_id("VIEW_01");
     item1.set_name("Low Value Item");
     item1.set_value(10.0);
 
-    target_layout_extended::Item item2;
+    tle::Item item2;
     item2.set_id("VIEW_02");
     item2.set_name("High Value Item");
     item2.set_value(95.0);
 
-    std::vector<target_layout_extended::Item> const items = {item1, item2};
+    std::vector<tle::Item> const items = {item1, item2};
 
     auto high_value_view = items | std::views::filter([](auto const& it) noexcept {
         return it.value() > 50.0;

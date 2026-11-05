@@ -6,8 +6,8 @@
 #include <thread>
 #include <unistd.h>
 
-namespace jrn = target_layout_extended::journal;
-namespace adapter = target_layout_extended::journal_signal_adapter;
+namespace jrn = tle::journal;
+namespace adapter = tle::journal_signal_adapter;
 
 static_assert(jrn::single_entry_catalog<adapter::catalog>);
 static_assert(jrn::is_valid_catalog(adapter::k_catalog));

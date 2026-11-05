@@ -5,7 +5,7 @@
 #include <pthread.h>
 #include <utility>
 
-namespace target_layout_extended::journal_signal_adapter {
+namespace tle::journal_signal_adapter {
 
     auto signal_adapter::default_debug_policy() noexcept -> journal::policy {
         journal::policy policy{};
@@ -130,4 +130,4 @@ namespace target_layout_extended::journal_signal_adapter {
         }
     }
 
-} // namespace target_layout_extended::journal_signal_adapter
+} // namespace tle::journal_signal_adapter

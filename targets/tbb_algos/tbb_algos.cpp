@@ -5,7 +5,7 @@
 #include <ranges>
 #include <stdexcept>
 
-namespace target_layout_extended::tbb_algos {
+namespace tle::tbb_algos {
 
     auto parallel_double(std::span<int> numbers) noexcept -> bool {
         try {
@@ -40,4 +40,4 @@ namespace target_layout_extended::tbb_algos {
         }
     }
 
-} // namespace target_layout_extended::tbb_algos
+} // namespace tle::tbb_algos

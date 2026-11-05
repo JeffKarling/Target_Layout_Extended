@@ -11,10 +11,10 @@
 #include <vector>
 
 int main() {
-  namespace dm = target_layout_extended::database_manager;
-  namespace de = target_layout_extended::db_export;
-  namespace jrn = target_layout_extended::journal;
-  namespace ta = target_layout_extended::tbb_algos;
+  namespace dm = tle::database_manager;
+  namespace de = tle::db_export;
+  namespace jrn = tle::journal;
+  namespace ta = tle::tbb_algos;
 
   std::filesystem::path const db_path =
       std::filesystem::temp_directory_path() /
@@ -36,7 +36,7 @@ int main() {
   }
 
   for (auto const [index, value] : std::views::enumerate(numbers)) {
-    target_layout_extended::Item item;
+    tle::Item item;
     item.set_id("ITEM_" + std::to_string(index + 1U));
     item.set_name("Component Item " + std::to_string(index + 1U));
     item.set_value(static_cast<double>(value));

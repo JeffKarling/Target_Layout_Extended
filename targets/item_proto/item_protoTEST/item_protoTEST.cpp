@@ -3,7 +3,7 @@
 #include <string>
 
 TEST(ItemProtoTest, SerializesAndParsesProtobufMessages) {
-    target_layout_extended::ItemDatabase source_db;
+    tle::ItemDatabase source_db;
     auto* item = source_db.add_items();
     item->set_id("PROTO_01");
     item->set_name("Generated Proto Item");
@@ -12,7 +12,7 @@ TEST(ItemProtoTest, SerializesAndParsesProtobufMessages) {
     std::string serialized;
     ASSERT_TRUE(source_db.SerializeToString(&serialized));
 
-    target_layout_extended::ItemDatabase parsed_db;
+    tle::ItemDatabase parsed_db;
     ASSERT_TRUE(parsed_db.ParseFromString(serialized));
     ASSERT_EQ(parsed_db.items_size(), 1);
     EXPECT_EQ(parsed_db.items(0).id(), "PROTO_01");

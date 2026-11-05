@@ -4,7 +4,7 @@
 #include <string>
 #include <system_error>
 
-namespace target_layout_extended::database_manager::detail {
+namespace tle::database_manager::detail {
 
     auto is_writable_path(const std::filesystem::path& path) noexcept -> bool {
         if (path.empty()) {
@@ -38,4 +38,4 @@ namespace target_layout_extended::database_manager::detail {
         return file.is_open();
     }
 
-} // namespace target_layout_extended::database_manager::detail
+} // namespace tle::database_manager::detail
