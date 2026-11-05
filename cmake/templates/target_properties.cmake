@@ -1,12 +1,16 @@
-target_compile_features(${DIR_NAME} PRIVATE cxx_std_23)
+target_compile_features(${DIR_NAME} PRIVATE cxx_std_20)
 
 set(IWYU_MAPPING_FILE "${CMAKE_SOURCE_DIR}/iwyu_mappings.imp")
 set(IWYU_ARGS
         "${IWYU_PATH}$<SEMICOLON>-Xiwyu$<SEMICOLON>--mapping_file=${IWYU_MAPPING_FILE}"
 )
 
+set(CPPCHECK_STD_ARG
+        "$<IF:$<IN_LIST:cxx_std_23,$<TARGET_PROPERTY:${DIR_NAME},COMPILE_FEATURES>>,c++23,c++20>"
+)
+
 set(CPPCHECK_ARGS
-        "cppcheck$<SEMICOLON>--enable=all$<SEMICOLON>--std=c++23$<SEMICOLON>--inline-suppr$<SEMICOLON>--suppress=missingIncludeSystem$<SEMICOLON>--suppress=unusedStructMember$<SEMICOLON>--suppress=unusedFunction$<SEMICOLON>--suppress=unmatchedSuppression$<SEMICOLON>--suppress=checkersReport$<SEMICOLON>--suppress=*:${CMAKE_BINARY_DIR}/*"
+        "cppcheck$<SEMICOLON>--enable=all$<SEMICOLON>--std=${CPPCHECK_STD_ARG}$<SEMICOLON>--inline-suppr$<SEMICOLON>--suppress=missingIncludeSystem$<SEMICOLON>--suppress=unusedStructMember$<SEMICOLON>--suppress=unusedFunction$<SEMICOLON>--suppress=unmatchedSuppression$<SEMICOLON>--suppress=checkersReport$<SEMICOLON>--suppress=*:${CMAKE_BINARY_DIR}/*"
 )
 
 set(IPO_VALUE "OFF")

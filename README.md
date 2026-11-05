@@ -3,51 +3,30 @@
 [![CI](https://github.com/JeffKarling/Target_Layout_Extended/actions/workflows/ci.yml/badge.svg)](https://github.com/JeffKarling/Target_Layout_Extended/actions/workflows/ci.yml)
 [![Documentation](https://github.com/JeffKarling/Target_Layout_Extended/actions/workflows/docs.yml/badge.svg)](https://github.com/JeffKarling/Target_Layout_Extended/actions/workflows/docs.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/JeffKarling/Target_Layout_Extended/badge)](https://securityscorecards.dev/viewer/?uri=github.com/JeffKarling/Target_Layout_Extended)
+[![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
 [![C++23](https://img.shields.io/badge/C%2B%2B-23-blue.svg)](https://en.cppreference.com/w/cpp/23)
 [![License](https://img.shields.io/badge/License-MIT--0-green.svg)](LICENSE)
 
-*'The component is the CMake target, extended for production.'*
+*'Enterprise implementation on top of a strict component design.'*
 
-This repository builds directly on **[Target Layout](https://github.com/JeffKarling/Target_Layout)**. Where the base project proves the core rule in its minimal form, **Target Layout Extended** shows how a physical component scales in production Linux C++ engineering.
+This repository builds directly on **[Target Layout](https://github.com/JeffKarling/Target_Layout)**. Where the base project proves the core rule in its minimal form, **Target Layout Extended** shows how a physical component design scales in production.
 
-Every directory under `targets/` is an isolated physical component with an acyclic compilation firewall. Public contracts remain separated from private implementations, colocated tests, and production facilities.
+This project is **opinionated** and only supports Linux OS and development environment. See the documentation for more details.
 
-## Production extensions
+## Production Extensions
 
-* **Boundary exception safety.** Private implementations catch internal failures using centralized Lippincott handlers without leaking exceptions across target boundaries.
-* **Structured message catalogs.** Components record operational failures to `systemd-journald` through permanent UUID message catalogs.
-* **Zero overhead binary diagnostics.** Boundary exceptions freeze pre unwind call frames as raw binary pointers in `systemd-journald` without string formatting or DWARF lookup overhead, ready for offline symbolization with `addr2line`.
-* **Hardware counter benchmarking.** Components benchmark runtime performance against hardware counter baselines and utility curves.
-* **Centralized target configuration.** Components share compiler options and analysis settings without custom wrapper macros.
-* **Code generation as a sibling component.** Schemas such as Protobuf live in dedicated targets that expose generated headers transparently.
-* **Multi compiler toolchains.** Presets support GNU GCC and LLVM Clang with sanitizers, static analysis, and standard library hardening.
-
-## Quickstart
-
-Build the project across GNU GCC and LLVM Clang using the build scripts.
-
-```bash
-./production_artifacts/build_all.sh custom debug
-./production_artifacts/build_all.sh default release
-```
-
-Run an isolated hardware counter benchmark and evaluate its score curve.
-
-```bash
-cmake --build --preset GNU_Custom_Release --target tbb_algosBENCH_run
-```
+* **Robust error isolation.** Centralized Lippincott handlers automatically enforce boundary contracts across components, converting internal failures into external well defined return codes. Pre defined contract log detailes is also generated with structured information into systemd-journald.
+* **Custom logging library.** A thin logging library, `journal`, delivers high performance structured logging and diagnostics features for a Lakos component architecture design.`journal` is thighly integrated with Linux systemd-journald providing component contractually defined logs.
+* **Logg based post-mortem diagnostics.** Boundary failures is captured with exact throw points and call sequence directly into system journals with zero runtime performance penalty enabling automated back end debugging analysis.
+* **Performance regression protection.** Built in component benchmarking automatization and performance regression detection. In addition static variables defines optmization cost to value tradeoff for self-driving component self-optimizing loops.
+* **Cargo-style build consistency.** Centralized configuration templates establish workspace-wide compiler flags, analysis rules, and warnings while allowing individual components to define local overrides cleanly.
+* **Centralized build presets.** Standardized CMake presets is configured to use GCC and Clang compilers automating local compilation. Presets includes unit tests, sanitizers, and static analysis.
+* **Production ready continuous integration.** CMake presets translate directly into automated GitHub Actions workflows, guaranteeing identical verification between developer workstations and external hosted CI/CD runners.
+* **GitHub project infrastructure.** Github Actions example exemplifies CI/CD workflows deliverning enterprise high quality best practizes for verification, automation, and integration.
 
 ## Detailed documentation
 
-For deep architectural rationale and implementation walkthroughs, refer to the documentation suite.
-
-* [How it works](Documentation/index.md). Core principles, component anatomy, and centralized target configuration.
-* [Component boundaries and catalogs](Documentation/component_boundaries.md). Boundary exception handling, Lippincott routines, and message catalogs.
-* [Adding a component](Documentation/adding_a_component.md). Scaffolding runbook, CMake templates, and catalog contracts.
-* [Benchmarking and score optimization](Documentation/benchmarking_and_profiling.md). PMU hardware counters, utility curves, and regression checks.
-* [Presets and multi compiler workflow](Documentation/presets_and_compilers.md). Dual compiler matrix, build presets, and standard library hardening.
-* [Static analysis and deep debug](Documentation/static_analysis_and_debug.md). Clang-Tidy, Cppcheck, and Include-What-You-Use checks.
-* [Runtime sanitizers](Documentation/sanitizer_guide.md). AddressSanitizer, UndefinedBehaviorSanitizer, and ThreadSanitizer configurations.
+For deep architectural rationale and implementation walkthroughs, visit the [documentation site](https://jeffkarling.github.io/Target_Layout_Extended/).
 
 ## License
 

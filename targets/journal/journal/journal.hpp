@@ -508,7 +508,7 @@ namespace tle::journal {
             _reason.at(copy_len) = '\0';
             _reason_len = copy_len;
 
-            if !consteval {
+            if (!std::is_constant_evaluated()) {
                 _frame_count = detail::capture_current_stacktrace(_frames);
             }
         }
