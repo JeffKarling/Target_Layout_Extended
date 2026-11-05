@@ -2,7 +2,7 @@
 
 ## Core requirement
 
-Every algorithmic modification, hot path refactoring, data structure update, or interface redesign must include benchmark execution and regression verification. Agents must actively prevent latency degradation and instruction bloat.
+Every algorithmic modification, hot path refactoring or interface redesign must include benchmark execution. Agents must actively prevent latency degradation and instruction bloat.
 
 The user should never have to ask the agent to run benchmarks or compare performance metrics after modifying code.
 
@@ -26,7 +26,7 @@ Never evaluate benchmark scores or baseline regressions against unoptimized debu
 
 Every benchmark execution must evaluate current performance metrics against the birth baseline stored in `baseline.json`.
 
-Agents must inspect the benchmark console output or the generated report in `production_artifacts/profiling/<name>_score_report.md`. The report tracks wall clock latency, CPU cycles, retired instructions, and instructions per cycle.
+Agents must inspect the benchmark console output or the generated report in `production_artifacts/profiling/<name>_score_report.md`. The report tracks wall clock latency, CPU cycles, retired instructions and instructions per cycle.
 
 Any noticeable regression in latency or instruction counts must be resolved before presenting changes as complete.
 
@@ -40,4 +40,4 @@ When the evaluation decision reaches `target_score_reached` or indicates `stop_d
 
 Agents must verify physical hardware PMU metrics alongside wall clock latency.
 
-Inspect CPU cycles per operation, retired instructions per operation, branch misses, and cache misses. A sudden rise in retired instructions or branch mispredictions reveals unexpected abstraction penalties, hidden allocations, or missed compiler vectorization.
+Inspect CPU cycles, retired instructions, branch misses and cache misses. A sudden rise in retired instructions or branch mispredictions reveals unexpected abstraction penalties or missed compiler vectorization.

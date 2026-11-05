@@ -10,7 +10,7 @@ Keep component boundaries sharp as responsibilities grow.
 
 **Private internal helpers.** When helper functions or classes are only used inside a single component, place `<helper>.hpp` and `<helper>.cpp` at the root of `targets/<name>/` outside the `PUBLIC FILE_SET` directory `targets/<name>/<name>/`, and register `<helper>.cpp` under `PRIVATE` in `target_sources()`. Because CMake defaults the `FILE_SET` base directory to `targets/<name>/` so `<name>/<name>.hpp` resolves, linked consumers technically have `targets/<name>/` on their `-I` path. Encapsulation of `<helper>.hpp` therefore relies on two rules: quoted includes `#include "..."` are prohibited across the repository, and downstream consumers must only include target-prefixed `<name>/<name>.hpp` headers listed in `PUBLIC FILE_SET`.
 
-**Splitting a new sibling target.** Whenever a helper type, schema, or algorithm needs to be called or linked by a second component, split it into its own physical directory `targets/<new_name>/` with its own public header, catalog, and unit test suite. Never reach across component directories to share private files.
+**Splitting a new sibling target.** When a helper type, schema or algorithm is needed by a second component, split it into its own physical directory `targets/<new_name>/`. Give the new component its own public header, catalog and unit test suite. Never reach across component directories to share private files.
 
 **Zero link time overhead in release builds.** Splitting functionality into fine grained static targets does not penalize release binaries because `target_properties.cmake` enables `INTERPROCEDURAL_OPTIMIZATION` when `ENABLE_IPO` is on, allowing the linker to inline across static archive boundaries.
 

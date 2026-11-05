@@ -1,6 +1,6 @@
 # Runtime sanitizers
 
-**Target Layout Extended** provides runtime sanitizer presets across Clang and GCC. Sanitizers instrument memory accesses, integer operations, and thread synchronization primitives at compile time so the compiled unit tests in `<name>TEST` and the `app` executable catch memory corruption, data races, uninitialized reads, and undefined behavior at runtime with source line stack traces.
+**Target Layout Extended** provides runtime sanitizer presets across Clang and GCC. Sanitizers instrument memory accesses, integer operations and thread synchronization at compile time. Compiled unit tests in `<name>TEST` and the `app` executable catch memory corruption, data races, uninitialized reads and undefined behavior at runtime with source line stack traces.
 
 ## The three layer safety net
 

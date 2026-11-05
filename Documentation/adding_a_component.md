@@ -197,13 +197,13 @@ namespace {
 } // namespace
 ```
 
-## Private helpers, angle bracket includes, and splitting a new component
+## Private helpers, angle bracket includes and splitting a new component
 
 As a component grows, keep its physical boundary clean by following three rules for header inclusion and target splitting.
 
 * **Angle bracket includes only.** Every `#include` across the repository uses angle brackets `<...>` rather than quotes `"..."`. Quoted includes resolve relative to the current source file on disk before consulting CMake target search paths, which can mask missing `target_link_libraries()` declarations or reach across directories via relative paths. Public headers always use the target prefix `#include <<name>/<name>.hpp>`, and private helpers inside the owning component use `#include <<helper>.hpp>`.
 * **Private helpers stay in the component root.** When helper functions or classes are only needed inside a single component, place `<helper>.hpp` and `<helper>.cpp` at the root of `targets/<name>/` alongside `<name>.cpp`, and list `<helper>.cpp` under `PRIVATE` in `target_sources()`. Because CMake's `PUBLIC FILE_SET` defaults `BASE_DIRS` to `targets/<name>/` so `<name>/<name>.hpp` resolves, `FILES` in the `FILE_SET` controls installation and IDE header sets rather than hiding the root directory from linked consumers. Treat any unprefixed header outside `targets/<name>/<name>/` as strictly private to its owning component.
-* **Shared capabilities become a new sibling target.** As soon as a helper type or function needs to be called by a second component, split it into its own directory `targets/<new_name>/` with its own public header, catalog, and unit test suite. Never expose internal helpers by reaching across component directories.
+* **Shared capabilities become a new sibling target.** When a helper type or function is needed by a second component, split it into its own directory `targets/<new_name>/`. Give the new component its own public header, catalog and unit test suite. Never expose internal helpers by reaching across component directories.
 * **Link time optimization removes boundary overhead.** Splitting code into fine grained static library targets does not penalize release performance. `cmake/templates/target_properties.cmake` enables `INTERPROCEDURAL_OPTIMIZATION` in release builds when `ENABLE_IPO` is on, allowing the linker to inline functions and deduplicate template instantiations across static archive boundaries.
 
 ## Verification workflow

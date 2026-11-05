@@ -12,7 +12,7 @@ The project targets Linux and resolves every third party dependency through `pkg
 
 * **Toolchain.** CMake 3.25 or newer, GCC and Clang with C++23 support. The `journal` component links `-lstdc++exp` for `std::stacktrace` via generator expression, so both compilers build against libstdc++ from GCC 14 or newer.
 * **Libraries.** `protobuf` with a matching `protoc`, `tbb`, `libsystemd` and `gtest` when `BUILD_TESTING` is on.
-* **Optional tools.** `perf` for the profiling targets, `dot` from Graphviz for the dependency graph, plus `clang-tidy`, `include-what-you-use` and `cppcheck` for static analysis. `ccache` is picked up automatically when present.
+* **Optional tools.** Use `perf` for profiling targets and `dot` from Graphviz for dependency graphs. Static analysis uses `clang-tidy`, `include-what-you-use` and `cppcheck`. The build picks up `ccache` automatically when present.
 
 ## Anatomy of an extended component
 
@@ -134,7 +134,7 @@ target_link_libraries(${DIR_NAME} PUBLIC PkgConfig::protobuf)
 
 * **Schema input lives in version control.** The `.proto` file lives at `targets/item_proto/item_proto/item_proto.proto` while generated `.pb.h` and `.pb.cc` files stay inside `${CMAKE_CURRENT_BINARY_DIR}`.
 * **Transparent `FILE_SET` consumption.** By setting `BASE_DIRS ${CMAKE_CURRENT_BINARY_DIR}` on the `PUBLIC FILE_SET`, downstream components like `database_manager` and `db_export` link `${PROJECT_NAME}::item_proto` and write `#include <item_proto/item_proto.pb.h>`.
-* **Inherited compile options with isolated warning suppressions.** The component includes both shared configuration files. It inherits all global optimization levels, debug formats, standard library hardening defines, and sanitizer instrumentation. Targeted generator expressions suppress only the specific compiler warnings produced by machine generated code, while `SYSTEM ON` silences external header warnings in consumers.
+* **Inherited compile options with isolated warning suppressions.** The component includes both shared configuration files. It inherits all global optimization levels, debug formats, standard library hardening flags and sanitizer instrumentation. Targeted generator expressions suppress only the specific compiler warnings produced by machine generated code, while `SYSTEM ON` silences external header warnings in consumers.
 
 ## Executables follow the same naming rule
 

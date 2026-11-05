@@ -2,7 +2,7 @@
 
 ## Baseline inclusion mandate
 
-Every physical component in this repository must inherit the shared global baseline files. This includes machine generated schemas, third party wrappers, and custom performance components.
+Every physical component in this repository must inherit the shared global baseline files. This includes machine generated schemas, third party wrappers and custom performance components.
 
 Both `target_properties.cmake` and `target_compile_options.cmake` must always be included directly after the target declaration.
 
@@ -10,13 +10,13 @@ Both `target_properties.cmake` and `target_compile_options.cmake` must always be
 
 Omitting shared include files because of compilation issues is a severe anti pattern.
 
-Dropping `target_compile_options.cmake` completely removes optimization levels, debug formats, stack canary protection `-fstack-protector-strong`, standard library bounds hardening `_GLIBCXX_ASSERTIONS` and `_LIBCPP_HARDENING_MODE_FAST` in custom release builds, and sanitizer instrumentation. The component then becomes an invisible blind spot in the build matrix.
+Dropping `target_compile_options.cmake` completely removes optimization levels and debug formats. It also strips stack canary protection, standard library bounds hardening and sanitizer instrumentation. The component then becomes an invisible blind spot in the build matrix.
 
 ## The local override pattern
 
-When a component encounters friction with global defaults, agents must retain the baseline files. Agents must apply minimal, surgical overrides directly on the specific target after including `target_compile_options.cmake`.
+When a component encounters friction with global defaults, agents must retain the baseline files. Agents apply surgical overrides directly on the target after including `target_compile_options.cmake`.
 
-Because compilers evaluate flags from left to right, appending an inverse flag on the target overrides the inherited global option while preserving all other optimizations, sanitizers, and hardening defines.
+Because compilers evaluate flags from left to right, appending an inverse flag on the target overrides the inherited global option. This preserves all other optimizations, sanitizers and hardening defines.
 
 ## Restoring strict floating point semantics
 

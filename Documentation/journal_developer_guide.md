@@ -1,6 +1,6 @@
 # Journal developer guide
 
-This guide explains how to use `journal` when building a new component under Target Layout Extended. If you have previously used libraries like `spdlog`, this guide highlights key differences in mental model, design rules, and performance characteristics.
+This guide explains how to use `journal` when building a new component under Target Layout Extended. Developers accustomed to libraries like `spdlog` will notice key differences in mental model, design rules and performance characteristics.
 
 ## Mental model transition from spdlog
 
@@ -11,7 +11,7 @@ In `spdlog`, logging interpolates runtime variables into a formatted string on t
 spdlog::info("Processing item {} with flags {:x}", item_id, flags);
 ```
 
-In `journal`, `journal::log` intentionally does **not** accept format strings or runtime text interpolation arguments. Converting runtime integers, floats, and structs into formatted strings on the producer thread costs hundreds of nanoseconds and risks heap allocations. Instead, `journal` separates the static event description from the runtime variable state.
+In `journal`, `journal::log` intentionally does **not** accept format strings or runtime text interpolation arguments. Converting runtime integers, floats and structs into formatted strings on the producer thread costs hundreds of nanoseconds and risks heap allocations. Instead, `journal` separates the static event description from the runtime variable state.
 
 ```cpp title="Equivalent zero-formatting journal call with runtime variables"
 struct item_context {
@@ -30,7 +30,7 @@ jrn::log(
 This design follows three core principles.
 
 1. **Zero string formatting on the producer thread.** `journal::message` carries a static description while runtime variables are passed as raw bytes via `journal::as_binary_payload`. The producer copies the raw bytes and hardware cycle timestamp into the lock free ring buffer in roughly 30 nanoseconds without running `std::format` or `snprintf`.
-2. **Native systemd-journald integration.** Logs become structured systemd journal fields including `MESSAGE`, `PRIORITY`, `COMPONENT`, `CODE_FILE`, `CODE_LINE`, `RAW_PAYLOAD`[^1], and `MESSAGE_ID`.
+2. **Native systemd-journald integration.** Logs become structured systemd journal fields. Standard attributes include `MESSAGE`, `PRIORITY` and `COMPONENT`. Diagnostics attach `CODE_FILE`, `CODE_LINE`, `RAW_PAYLOAD`[^1] and `MESSAGE_ID`.
 3. **Compiler enforced component taxonomy.** Components do not manually declare logger names. The component name is deduced automatically from directory layout at compile time under the physical one name rule.
 
 ## Adding journal to CMakeLists.txt

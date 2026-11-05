@@ -2,7 +2,7 @@
 
 ## Core mandate
 
-Every public API, class, function, and component boundary must follow the primary design guideline articulated by Scott Meyers. Make interfaces easy to use correctly and hard to use incorrectly.
+Every public API, class and component boundary must follow the primary design guideline articulated by Scott Meyers. Make interfaces easy to use correctly and hard to use incorrectly.
 
 The designer of an interface is accountable for client errors. If smart and conscientious developers make mistakes using an API, the interface design itself is defective.
 
@@ -12,7 +12,7 @@ If an attempted use of an interface would violate expectations, the code must no
 
 Express domain concepts in dedicated strong types instead of raw primitives.
 
-Raw integers, floating point numbers, and strings lack semantic intent. Using raw primitives invites primitive obsession and silent logic bugs.
+Raw integers, floating point numbers and strings lack semantic intent. Using raw primitives invites primitive obsession and silent logic bugs.
 
 Strong typing is recommended regardless of parameter count. A single parameter function like `set_timeout(Milliseconds ms)` prevents callers from mistakenly passing raw numbers or seconds. Similarly, `find_user(UserId id)` prevents callers from passing raw strings or email addresses.
 

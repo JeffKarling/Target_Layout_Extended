@@ -18,9 +18,9 @@ The `journal` target follows a strict last caller wins model. It must never embe
 
 ## All eight Syslog severity classifications
 
-Use the strong scoped enumeration `journal::severity` covering all eight standard Syslog levels from `emergency`, `alert`, `critical`, `error`, `warning`, `notice`, `info`, to `debug`.
+Use the strong scoped enumeration `journal::severity`. It covers all eight standard Syslog levels from `emergency` to `debug`.
 
-Pass strong types `journal::severity`, `journal::message`, and `journal::binary_payload` in any order to `journal::log`. The component name is deduced automatically at compile time from the caller source location under the physical one name rule.
+Pass strong types `journal::severity`, `journal::message` and `journal::binary_payload` in any order to `journal::log`. The component name is deduced automatically at compile time from the caller source location under the physical one name rule.
 
 ## Catalog entries strictly at component boundaries
 
@@ -32,7 +32,7 @@ Use `journal::catch_boundary_exception` in boundary `catch` blocks and `journal:
 
 Take advantage of native binary logging capabilities when diagnosing state corruption.
 
-Unlike text only loggers, the native wire protocol of `systemd-journald` accepts arbitrary length prefixed binary payloads via `sd_journal_sendv`. Wrap trivially copyable C++ structs, network packets, serialization headers, or `std::span<const std::byte>` buffers using `journal::as_binary_payload` or `journal::binary_payload` without hex or base64 encoding overhead.
+Unlike text only loggers, the native wire protocol of `systemd-journald` accepts arbitrary length prefixed binary payloads via `sd_journal_sendv`. Wrap trivially copyable C++ structs, network packets or serialization buffers using `journal::as_binary_payload`. Raw `std::span<const std::byte>` views pass through without hex or base64 encoding overhead.
 
 ## Offline symbolization and unit test capture
 
@@ -40,4 +40,4 @@ Binary stack traces attached in `RAW_PAYLOAD=` contain raw 64 bit machine instru
 
 Do not attempt to demangle or symbolize stack traces at runtime inside component boundaries. Offline tools such as `addr2line` or `llvm-addr2line` map the captured addresses back to source files and function names against the binary.
 
-In unit tests that verify diagnostic emissions, redirect the consumer thread into memory with `journal::detail::set_record_sink`, synchronize using `journal::flush`, and restore the default sink with `journal::detail::reset_record_sink`.
+In unit tests that verify diagnostic emissions, redirect the consumer thread into memory with `journal::detail::set_record_sink`. Synchronize using `journal::flush` and restore the default sink with `journal::detail::reset_record_sink`.

@@ -1,13 +1,13 @@
 ---
 name: performance
 description: >-
-  Profiles, benchmarks, and optimizes hot paths in existing components against hardware PMU baselines.
-  Use this skill when the user asks to optimize, speed up, benchmark, or profile an existing component.
+  Profiles, benchmarks and optimizes hot paths in existing components against hardware PMU baselines.
+  Use this skill when the user asks to optimize, speed up, benchmark or profile an existing component.
 ---
 
 # Performance optimization workflow
 
-Use this runbook to profile hot paths, apply zero-allocation optimizations, and verify benchmark score improvements.
+Use this runbook to profile hot paths, apply zero allocation optimizations and verify benchmark score improvements.
 
 ## Step 1. Measure the starting baseline
 
@@ -18,22 +18,22 @@ Compile and run the target benchmark under an optimized custom release preset:
 cmake --build --preset Clang_Custom_Release --target <component>BENCH_run
 ```
 
-Record the starting numbers for wall clock latency, CPU cycles, retired instructions, and instructions per cycle. Note that `*_Custom_Release` presets include production hardening (`-fstack-protector-strong`, `_GLIBCXX_ASSERTIONS`, and `_LIBCPP_HARDENING_MODE_FAST`).
+Record the starting numbers for wall clock latency, CPU cycles, retired instructions and instructions per cycle. Note that `*_Custom_Release` presets include production hardening `-fstack-protector-strong`, `_GLIBCXX_ASSERTIONS` and `_LIBCPP_HARDENING_MODE_FAST`.
 
 ## Step 2. Profile bottlenecks using hardware counters
 
 Inspect the PMU metrics captured by `perf_scope`:
-* **High instruction count.** Indicates virtual dispatch overhead, redundant copies, per-iteration `.at(idx)` or `.subspan(idx)` bounds checks inside loops, or missing standard library inlining.
-* **Low IPC.** Indicates memory stalls, cache misses, or branch mispredictions.
+* **High instruction count.** Indicates virtual dispatch overhead, redundant copies, per-iteration bounds checks inside loops or missing standard library inlining.
+* **Low IPC.** Indicates memory stalls, cache misses or branch mispredictions.
 * **Branch misses.** Indicates unpredicted conditionals inside inner loops. Replace with lookup tables or arithmetic masking.
 * **Cache misses.** Indicates non-contiguous memory layouts. Reorder structs for cache line locality or use `std::span`.
 
-When deeper whole-application CPU instruction analysis is needed, run `cmake --build --preset Clang_Custom_Release --target Perf_stat`, `Perf_record`, `Perf_report`, or `Perf_annotate` to inspect reports in `production_artifacts/profiling/perf/`.
+When deeper whole-application CPU instruction analysis is needed, run `cmake --build --preset Clang_Custom_Release --target Perf_stat`, `Perf_record` or `Perf_report` to inspect reports in `production_artifacts/profiling/perf/`.
 
 ## Step 3. Apply invariant preserving optimizations
 
 Refactor the component implementation in `targets/<component>/<component>.cpp`:
-* Replace intermediate container allocations and manual index loops with `std::views` pipelines, `std::views::enumerate`, `std::views::iota`, and `std::ranges::transform`.
+* Replace intermediate container allocations and manual index loops with `std::views` pipelines, `std::views::enumerate` and `std::ranges::transform`.
 * Slice `std::span` buffers once before a loop (`span.first(count)`) and iterate via `std::views::enumerate` or `std::ranges` algorithms so bounds checks under `_GLIBCXX_ASSERTIONS` and `_LIBCPP_HARDENING_MODE_FAST` are hoisted out of the hot loop body.
 * Pass contiguous memory slices via `std::span` to enable SIMD auto-vectorization.
 * Hoist invariant calculations and memory allocations out of hot loops.

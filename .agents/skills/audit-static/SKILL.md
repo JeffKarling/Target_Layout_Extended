@@ -1,13 +1,13 @@
 ---
 name: audit-static
 description: >-
-  Runs compile-time static analysis, Clang-Tidy checks, Cppcheck scans, and Include-What-You-Use header hygiene.
-  Use this skill when the user asks to run static analysis, check code quality, audit includes, or run linter checks.
+  Runs compile-time static analysis, Clang-Tidy checks, Cppcheck scans and Include-What-You-Use header hygiene.
+  Use this skill when the user asks to run static analysis, check code quality or audit header includes.
 ---
 
 # Static analysis and header hygiene workflow
 
-Use this runbook to audit code structure, detect bugs before runtime, and maintain minimal header dependencies.
+Use this runbook to audit code structure, detect bugs before runtime and maintain minimal header dependencies.
 
 ## Step 1. Run Clang-Tidy static analysis
 
@@ -19,7 +19,7 @@ cmake --build --preset Clang_Tidy
 ```
 
 Triage reported warnings into three categories:
-* **Category A critical issues.** Bugprone patterns, analyzer warnings, and core guideline violations must be resolved immediately.
+* **Category A critical issues.** Bugprone patterns, analyzer warnings and core guideline violations must be resolved immediately.
 * **Category B design notes.** Situational checks like `readability-magic-numbers` should be reviewed and logged in `production_artifacts/clang_tidy_state.md`.
 * **Category C stylistic noise.** Minor naming warnings can be suppressed locally with a targeted comment when intentional.
 
@@ -32,7 +32,7 @@ cmake --preset GNU_Custom_Debug -DENABLE_CPPCHECK=ON
 cmake --build --preset GNU_Custom_Debug
 ```
 
-Review findings for null pointer dereferences, array index bounds risks, uninitialized variables, and resource leaks.
+Review findings for null pointer dereferences, array index bounds risks, uninitialized variables and resource leaks.
 
 ## Step 3. Run Include-What-You-Use header hygiene
 

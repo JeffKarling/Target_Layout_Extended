@@ -12,7 +12,7 @@ When a function signature or API contract changes, all call sites in unit tests 
 
 ## Add new tests for new behavior and edge cases
 
-When introducing a new feature, deduction logic, or refactoring, agents must proactively add dedicated test cases. Tests must cover typical happy paths, custom configurations, boundary edge cases, and fallback behavior.
+When introducing a new feature or refactoring, agents must proactively add dedicated test cases. Tests must cover typical happy paths, custom configurations, boundary edge cases and fallback behavior.
 
 Compile time assertions using `static_assert` should be added alongside runtime tests whenever an interface supports `constexpr` evaluation.
 

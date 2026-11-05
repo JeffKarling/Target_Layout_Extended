@@ -79,9 +79,9 @@ void reset_default_policy() noexcept;
 [[nodiscard]] auto statistics_snapshot() noexcept -> statistics;
 ```
 
-* **Pre activation validation.** Call `journal::is_valid_policy` before applying untrusted external data. The validator verifies stride ceilings, percentage limits, severity values, ring capacities, and printable component names.
+* **Pre activation validation.** Call `journal::is_valid_policy` before applying untrusted external data. The validator verifies stride ceilings, percentage limits and severity values. It also checks ring capacities and printable component names.
 * **Atomic swapping and default reset.** Call `journal::activate_policy` to publish a validated candidate struct. The consumer thread observes the new configuration on its next pass through an atomic generation counter. Call `journal::reset_default_policy` to restore flight recorder defaults.
-* **Live state queries and telemetry.** Call `journal::active_policy` to inspect the active configuration. Call `journal::statistics_snapshot` to inspect cumulative `submitted`, `emitted`, and `lost` record counters for system health monitoring.
+* **Live state queries and telemetry.** Call `journal::active_policy` to inspect the active configuration. Call `journal::statistics_snapshot` to inspect cumulative `submitted`, `emitted` and `lost` record counters for system health monitoring.
 
 ## Zero dependency POSIX signal adapter component
 

@@ -11,7 +11,7 @@ cmake --preset Clang_Tidy
 cmake --build --preset Clang_Tidy
 ```
 
-In `cmake/templates/target_properties.cmake`, `CXX_CLANG_TIDY` is attached only when the build type is `Clang_Tidy`. The enabled groups are `bugprone`, `clang-analyzer`, `concurrency`, `cppcoreguidelines`, `google`, `modernize`, `performance` and `readability`, with `modernize-use-trailing-return-type` disabled. The checks are passed on the command line rather than through a `.clang-tidy` file, so edit that property to change them.
+In `cmake/templates/target_properties.cmake`, `CXX_CLANG_TIDY` is attached only when the build type is `Clang_Tidy`. Enabled groups include `bugprone`, `clang-analyzer`, `concurrency` and `cppcoreguidelines`. They also include `google`, `modernize`, `performance` and `readability`. The `modernize-use-trailing-return-type` check is disabled. Checks are passed on the command line rather than through a `.clang-tidy` file.
 
 The root `CMakeLists.txt` forces `BUILD_TESTING` off for any build type containing `Tidy`. Only component libraries and `app` are analyzed. Test and benchmark sources are not. Machine generated components such as `targets/item_proto/` clear `CXX_CLANG_TIDY` on their own target so generated Protobuf files do not clutter the output.
 
@@ -19,7 +19,7 @@ The root `CMakeLists.txt` forces `BUILD_TESTING` off for any build type containi
 
 To prevent warning fatigue while keeping active builds clean, findings are grouped into three categories.
 
-* **Category A safety critical checks.** Bugprone patterns, analyzer defects, and core guideline violations that are fixed before committing.
+* **Category A safety critical checks.** Bugprone patterns, analyzer defects and core guideline violations that are fixed before committing.
 * **Category B situational design warnings.** Checks such as `readability-magic-numbers` that warrant periodic review and are logged in `production_artifacts/clang_tidy_state.md`.
 * **Category C stylistic noise.** Minor identifier length or formatting warnings logged in `production_artifacts/clang_tidy_state.md` or suppressed locally with a targeted comment when intentional.
 
@@ -38,7 +38,7 @@ cmake --build --preset GNU_Custom_Debug
 ```
 
 * **Include What You Use via `iwyu_mappings.imp`.** Ensures every component `.hpp` and `.cpp` file directly includes the headers it uses and removes unused transitive includes.
-* **Cppcheck via `ENABLE_CPPCHECK`.** Runs inline with C++23 enabled to surface null pointer dereferences, bounds errors, and resource leaks.
+* **Cppcheck via `ENABLE_CPPCHECK`.** Runs inline with C++23 enabled to surface null pointer dereferences, bounds errors and resource leaks.
 
 ## Deep debug standard library hardening
 
@@ -48,9 +48,9 @@ Standard debug builds map machine instructions back to source lines, but they do
 
 ### Fast assertions in custom release and debug
 
-Enabled automatically in `GNU_Custom_Release`, `Clang_Custom_Release`, `GNU_Custom_Debug`, and `Clang_Custom_Debug` builds with low overhead and full ABI compatibility.
+Enabled automatically in custom release and debug builds across GNU and Clang presets. These provide low overhead and full ABI compatibility.
 
-* **GCC and Clang with `libstdc++`.** Defines `_GLIBCXX_ASSERTIONS` to enable bounds checks on `std::vector`, `std::string`, `std::span`, and `std::optional` dereferences.
+* **GCC and Clang with `libstdc++`.** Defines `_GLIBCXX_ASSERTIONS` to enable bounds checks on `std::vector`, `std::string`, `std::span` and `std::optional` dereferences.
 * **Clang with `libc++`.** Defines `_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_FAST` in custom release and `_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG` in custom debug.
 
 ### Exhaustive deep debug

@@ -2,12 +2,12 @@
 name: feature
 description: >-
   Scaffolds and implements new physical components or functional capabilities under Target Layout Extended.
-  Use this skill when the user asks to add, create, or scaffold a new component, library target, or feature.
+  Use this skill when the user asks to add, create or scaffold a new component or library target.
 ---
 
 # Feature development workflow
 
-Use this runbook to design, scaffold, implement, and verify a new component.
+Use this runbook to design, scaffold, implement and verify a new component.
 
 ## Step 0. Architectural decision tree
 

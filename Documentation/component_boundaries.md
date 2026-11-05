@@ -38,7 +38,7 @@ Inside a component's `.cpp` file, standard C++ exceptions and throwing standard 
 * **ABI and compiler flag friction.** Propagating exceptions across boundaries requires uniform unwinding tables and matching exception semantics across linked targets.
 * **Unclear failure ownership.** When an uncaught exception unwinds across multiple components up the call stack, the context where the boundary contract was violated is harder to trace.
 
-To keep subsystem interfaces narrow and predictable, public functions in operational components such as `database_manager`, `tbb_algos`, and `db_export` are marked `noexcept` and return explicit status values.
+Public functions in operational components such as `database_manager`, `tbb_algos` and `db_export` are marked `noexcept`. They return explicit status values to keep subsystem interfaces narrow and predictable.
 
 ```cpp title="targets/database_manager/database_manager/database_manager.hpp"
 [[nodiscard]] auto initialize(const std::filesystem::path& db_path) noexcept -> bool;
@@ -49,14 +49,14 @@ To keep subsystem interfaces narrow and predictable, public functions in operati
 
 Marking public functions `noexcept` is an architectural pattern for operational and subsystem boundaries, not a mandatory rule for every component.
 
-* **Subsystem and service components.** Components that encapsulate I/O, thread pools, system calls, or third party libraries benefit from `noexcept` boundaries and Lippincott handlers because they act as firewalls between targets.
+* **Subsystem and service components.** Components that encapsulate I/O, thread pools, system calls or third party libraries benefit from `noexcept` boundaries. The boundary firewalls and Lippincott handlers insulate targets from internal failures.
 * **Data schemas and value types.** Pure data components such as `targets/item_proto/` expose generated Protobuf classes whose constructors and mutators allocate memory and follow standard C++ exception semantics. Wrapping fine grained value types or inline accessors in `noexcept` boundary loggers would add unnecessary overhead.
 
 ## The Lippincott function pattern
 
 Writing repetitive `try` and `catch` blocks with multiple `catch` clauses inside every public method creates boilerplate clutter. Instead, **Target Layout Extended** uses a **Lippincott function** provided by `targets/journal/`.
 
-A Lippincott function is a centralized exception handling routine called from a single `catch (...)` block at a `noexcept` boundary proxy. It rethrows the active exception internally via `std::rethrow_exception(std::current_exception())`, decodes the concrete exception type in one shared place, records the diagnostic event, and returns a clean error status.
+A Lippincott function is a centralized exception handling routine called from a single `catch (...)` block at a `noexcept` boundary proxy. It rethrows the active exception internally via `std::rethrow_exception(std::current_exception())` and decodes the concrete exception type in one shared place. It records the diagnostic event and returns a clean error status.
 
 Here is how `targets/database_manager/database_manager.cpp` guards its public boundary.
 
@@ -99,7 +99,7 @@ The failure originates inside the private implementation or precondition check. 
 | Any other `std::exception` | The default entry passed at the boundary | `error` | Boundary `catch` block |
 | Anything else | The default entry passed at the boundary | `critical` | Boundary `catch` block |
 
-Every boundary event carries `MESSAGE_ID`, `COMPONENT`, `PRIORITY`, `CODE_FILE`, `CODE_LINE` and `CODE_FUNC`. The `MESSAGE` field reads `[component] summary (type: what())`. The stack trace is stored in `RAW_PAYLOAD` as raw frame addresses, so symbolize it offline against the matching binary with a tool such as `addr2line`.
+Every boundary event records standard systemd fields. These include `MESSAGE_ID`, `COMPONENT` and `PRIORITY`. The event also attaches `CODE_FILE`, `CODE_LINE` and `CODE_FUNC`. The `MESSAGE` field reads `[component] summary: what()`. The stack trace is stored in `RAW_PAYLOAD` as raw frame addresses. Symbolize it offline against the matching binary with a tool such as `addr2line`.
 
 `catalog_exception` is not derived from `std::exception`. A generic `catch (const std::exception&)` inside a helper will therefore not swallow it on its way to the boundary.
 
