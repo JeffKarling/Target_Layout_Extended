@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/JeffKarling/Target_Layout_Extended/actions/workflows/ci.yml/badge.svg)](https://github.com/JeffKarling/Target_Layout_Extended/actions/workflows/ci.yml)
 [![Documentation](https://github.com/JeffKarling/Target_Layout_Extended/actions/workflows/docs.yml/badge.svg)](https://github.com/JeffKarling/Target_Layout_Extended/actions/workflows/docs.yml)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/JeffKarling/Target_Layout_Extended/badge)](https://securityscorecards.dev/viewer/?run_id=JeffKarling/Target_Layout_Extended)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/JeffKarling/Target_Layout_Extended/badge)](https://securityscorecards.dev/viewer/?uri=github.com/JeffKarling/Target_Layout_Extended)
 [![C++23](https://img.shields.io/badge/C%2B%2B-23-blue.svg)](https://en.cppreference.com/w/cpp/23)
 [![License](https://img.shields.io/badge/License-MIT--0-green.svg)](LICENSE)
 
