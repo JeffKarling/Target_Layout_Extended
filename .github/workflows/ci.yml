@@ -7,6 +7,8 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions: read-all
+
 jobs:
   static-analysis:
     name: Static Analysis and Quality Gates
@@ -23,10 +25,10 @@ jobs:
             iwyu cppcheck graphviz git
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Configure ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@ed74d11c0b343532753ecead8a951bb09bb34bc9 # v1.2.14
         with:
           key: static-analysis
 
@@ -77,10 +79,10 @@ jobs:
             tbb-devel systemd-devel gtest-devel git
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Configure ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@ed74d11c0b343532753ecead8a951bb09bb34bc9 # v1.2.14
         with:
           key: ${{ matrix.workflow }}
 
@@ -114,10 +116,10 @@ jobs:
             tbb-devel systemd-devel gtest-devel git
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Configure ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@ed74d11c0b343532753ecead8a951bb09bb34bc9 # v1.2.14
         with:
           key: ${{ matrix.workflow }}
 
@@ -138,10 +140,10 @@ jobs:
             tbb-devel systemd-devel gtest-devel graphviz git
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Configure ccache
-        uses: hendrikmuhs/ccache-action@v1.2
+        uses: hendrikmuhs/ccache-action@ed74d11c0b343532753ecead8a951bb09bb34bc9 # v1.2.14
         with:
           key: extra-presets
 
@@ -159,7 +161,7 @@ jobs:
           cmake --build --preset GNU_Custom_Release --target tbb_algosBENCH_run
 
       - name: Upload architecture diagram and benchmark artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: architecture-and-benchmark-artifacts
           path: |
