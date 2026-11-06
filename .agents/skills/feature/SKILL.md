@@ -17,7 +17,7 @@ Before drafting code or scaffolding files, walk through the six foundational dec
 Determine whether the capability belongs inside an existing component or warrants a new component under the physical one name rule. If the responsibility spans both runtime processing and serialization or storage, decide whether to split it into two distinct components.
 
 2. **Dependency graph positioning and library leverage.**
-Map where the component sits in the acyclic dependency graph. Consult `cmake/dependencies.cmake` first to evaluate whether an existing approved library already provides the required data structures, algorithms or acceleration routines. Avoid writing redundant or naive internal implementations from scratch when an approved dependency exists. Ensure all dependencies link `PRIVATE` in `targets/<name>/CMakeLists.txt` unless public headers directly expose types from those dependencies.
+Map where the component sits in the acyclic dependency graph. Consult `cmake/dependencies.cmake` first to evaluate whether an existing approved library already provides the required data structures, algorithms or acceleration routines. Avoid writing redundant or naive internal implementations from scratch when an approved dependency exists. Ensure all external dependencies link `PRIVATE` in `targets/<name>/CMakeLists.txt`. Public headers must never include third party headers or expose vendor types.
 
 3. **Public boundary contract.**
 Design the interface in `targets/<name>/<name>/<name>.hpp`. Follow Scott Meyers rules from `.agents/rules/meyers_interface_design.md` and ranges guidelines from `.agents/rules/ranges_and_views.md`. Determine if the component is an operational boundary requiring `noexcept` status returns.

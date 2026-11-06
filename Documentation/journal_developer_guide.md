@@ -39,7 +39,7 @@ Because `struct catalog` holds `journal::catalog_entry` fields and lives in the 
 
 ## Adding journal to CMakeLists.txt
 
-In your component `targets/<name>/CMakeLists.txt`, link `journal` as a private or public dependency.
+In your component `targets/<name>/CMakeLists.txt`, link `journal` as a public dependency when the header exposes a `struct catalog`.
 
 ```cmake title="targets/<name>/CMakeLists.txt"
 target_link_libraries(${DIR_NAME}

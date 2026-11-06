@@ -143,6 +143,7 @@ target_link_libraries(${DIR_NAME} PUBLIC PkgConfig::protobuf)
 * **Schema input lives in version control.** The `.proto` file lives at `targets/item_proto/item_proto/item_proto.proto` while generated `.pb.h` and `.pb.cc` files stay inside `${CMAKE_CURRENT_BINARY_DIR}`.
 * **Transparent `FILE_SET` consumption.** By setting `BASE_DIRS ${CMAKE_CURRENT_BINARY_DIR}` on the `PUBLIC FILE_SET`, downstream components like `database_manager` and `db_export` link `${PROJECT_NAME}::item_proto` and write `#include <item_proto/item_proto.pb.h>`.
 * **Inherited compile options with isolated warning suppressions.** The component includes both shared configuration files. It inherits all global optimization levels, debug formats, standard library hardening flags and sanitizer instrumentation. Targeted generator expressions suppress only the specific compiler warnings produced by machine generated code, while `SYSTEM ON` silences external header warnings in consumers.
+* **Isolated code generation exception.** Dedicated code generation targets like Protobuf represent the sole exception where an external generator library is linked `PUBLIC` to export machine generated schema structs. Service and algorithm components encapsulate external libraries strictly as `PRIVATE`.
 
 ## Executables follow the same naming rule
 
