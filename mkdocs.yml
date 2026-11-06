@@ -63,3 +63,15 @@ nav:
   - Presets and multi compiler workflow: presets_and_compilers.md
   - Static analysis and deep debug: static_analysis_and_debug.md
   - Runtime sanitizers: sanitizer_guide.md
+  - Engineering standards:
+      - Overview: standards/index.md
+      - Mandatory angle bracket includes: standards/mandatory_angle_bracket_includes.md
+      - Scott Meyers interface design: standards/meyers_interface_design.md
+      - Ranges and memoryless views: standards/ranges_and_views.md
+      - Boundary exceptions and catalogs: standards/boundary_exceptions_and_catalog_logging.md
+      - Generous structured logging: standards/generous_structured_logging.md
+      - Component segmentation: standards/component_segmentation_opportunities.md
+      - Shared target overrides: standards/override_shared_target_defaults.md
+      - Mandatory test updates: standards/mandatory_test_updates.md
+      - Mandatory benchmark verification: standards/mandatory_benchmark_verification.md
+      - Documentation and writing style: standards/documentation_and_natural_writing.md

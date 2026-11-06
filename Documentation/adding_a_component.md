@@ -60,11 +60,11 @@ if(BUILD_TESTING)
 endif()
 ```
 
-Every operational component links `${PROJECT_NAME}::journal` as `PUBLIC` because its public header declares catalog entries. Any internal library dependencies must be linked `PRIVATE` unless public function signatures expose their types.
+Every operational component links `${PROJECT_NAME}::journal` as `PUBLIC` because its public header declares catalog entries. Any internal library dependencies must be linked `PRIVATE` unless public function signatures expose their types. Components requiring custom compiler flags or warning suppressions follow [local overrides for shared target defaults](standards/override_shared_target_defaults.md).
 
 ## Public contract header
 
-Declare the public interface in `targets/<name>/<name>/<name>.hpp`.
+Declare the public interface in `targets/<name>/<name>/<name>.hpp`. Public interfaces must adhere to [Scott Meyers interface design](standards/meyers_interface_design.md) principles and [ranges and memoryless views](standards/ranges_and_views.md) guidelines.
 
 ```cpp title="targets/<name>/<name>/<name>.hpp"
 #pragma once
@@ -92,7 +92,7 @@ Public functions at subsystem boundaries are marked `noexcept` and return status
 
 ## Implementation and exception handling
 
-Implement component logic in `targets/<name>/<name>.cpp`. Internal helpers throw standard or catalog exceptions freely, while boundary entry points catch and log them through the Lippincott handler.
+Implement component logic in `targets/<name>/<name>.cpp`. Internal helpers throw standard or catalog exceptions freely, while boundary entry points catch and log them through the Lippincott handler. Review [boundary exceptions and catalog contract logging](standards/boundary_exceptions_and_catalog_logging.md) alongside [generous structured logging](standards/generous_structured_logging.md) for complete contract failure rules.
 
 ```cpp title="targets/<name>/<name>.cpp"
 #include <<name>/<name>.hpp>
@@ -172,7 +172,7 @@ target_link_libraries(${DIR_NAME}
 gtest_discover_tests(${DIR_NAME})
 ```
 
-Write test cases in `<name>TEST.cpp` covering both normal operation and boundary error containment.
+Write test cases in `<name>TEST.cpp` covering both normal operation and boundary error containment. Updating tests proactively alongside code changes is mandatory under [mandatory test updates](standards/mandatory_test_updates.md).
 
 ```cpp title="targets/<name>/<name>TEST/<name>TEST.cpp"
 #include <<name>/<name>.hpp>
@@ -201,9 +201,9 @@ namespace {
 
 As a component grows, keep its physical boundary clean by following three rules for header inclusion and target splitting.
 
-* **Angle bracket includes only.** Every `#include` across the repository uses angle brackets `<...>` rather than quotes `"..."`. Quoted includes resolve relative to the current source file on disk before consulting CMake target search paths, which can mask missing `target_link_libraries()` declarations or reach across directories via relative paths. Public headers always use the target prefix `#include <<name>/<name>.hpp>`, and private helpers inside the owning component use `#include <<helper>.hpp>`.
+* **Angle bracket includes only.** Every `#include` across the repository uses angle brackets `<...>` rather than quotes `"..."`. Quoted includes resolve relative to the current source file on disk before consulting CMake target search paths, which can mask missing `target_link_libraries()` declarations or reach across directories via relative paths. Public headers always use the target prefix `#include <<name>/<name>.hpp>`, and private helpers inside the owning component use `#include <<helper>.hpp>`. See [mandatory angle bracket includes](standards/mandatory_angle_bracket_includes.md) for configuration and verification rules.
 * **Private helpers stay in the component root.** When helper functions or classes are only needed inside a single component, place `<helper>.hpp` and `<helper>.cpp` at the root of `targets/<name>/` alongside `<name>.cpp`, and list `<helper>.cpp` under `PRIVATE` in `target_sources()`. Because CMake's `PUBLIC FILE_SET` defaults `BASE_DIRS` to `targets/<name>/` so `<name>/<name>.hpp` resolves, `FILES` in the `FILE_SET` controls installation and IDE header sets rather than hiding the root directory from linked consumers. Treat any unprefixed header outside `targets/<name>/<name>/` as strictly private to its owning component.
-* **Shared capabilities become a new sibling target.** When a helper type or function is needed by a second component, split it into its own directory `targets/<new_name>/`. Give the new component its own public header, catalog and unit test suite. Never expose internal helpers by reaching across component directories.
+* **Shared capabilities become a new sibling target.** When a helper type or function is needed by a second component, split it into its own directory `targets/<new_name>/`. Give the new component its own public header, catalog and unit test suite. Never expose internal helpers by reaching across component directories. Review [component segmentation opportunities](standards/component_segmentation_opportunities.md) for detailed guidelines.
 * **Link time optimization removes boundary overhead.** Splitting code into fine grained static library targets does not penalize release performance. `cmake/templates/target_properties.cmake` enables `INTERPROCEDURAL_OPTIMIZATION` in release builds when `ENABLE_IPO` is on, allowing the linker to inline functions and deduplicate template instantiations across static archive boundaries.
 
 ## Verification workflow

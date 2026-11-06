@@ -6,7 +6,7 @@ When software is decomposed into Lakos physical components, source instrumentati
 
 ## Colocated component benchmarks
 
-Just as `<name>TEST/` isolates unit verification, `<name>BENCH/` isolates performance measurement.
+Just as `<name>TEST/` isolates unit verification, `<name>BENCH/` isolates performance measurement. Review [component segmentation opportunities](standards/component_segmentation_opportunities.md) for how isolated targets enable fine grained benchmarking and compiler optimizations.
 
 ```text title="Colocated benchmark directory layout"
 targets/tbb_algos/
@@ -134,7 +134,7 @@ Commit `baseline.json` alongside the benchmark source code. Future benchmark run
 
 ### Executing benchmarks and reading reports
 
-Run the dedicated CMake benchmark target to measure the workload and print the score report.
+Run the dedicated CMake benchmark target to measure the workload and print the score report. Executing benchmarks and evaluating PMU hardware counters is mandatory for every algorithmic change under [mandatory benchmark verification](standards/mandatory_benchmark_verification.md).
 
 ```bash title="Run component benchmark target"
 cmake --build --preset GNU_Custom_Release --target tbb_algosBENCH_run

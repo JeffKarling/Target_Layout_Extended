@@ -2,7 +2,7 @@
 
 Where **[Target Layout](https://jeffkarling.github.io/Target_Layout/)** provides the educational introduction to the physical component model, **Target Layout Extended** demonstrates how that model operates in production. Every core rule remains in place. One directory under `targets/` represents one physical component and one static CMake target, with every file sharing the name derived from `${DIR_NAME}`.
 
-This guide details the infrastructure required for production Linux engineering. Read [component boundaries and catalogs](component_boundaries.md) to explore the boundary failure contract, or follow [adding a component](adding_a_component.md) when scaffolding a new target.
+This guide details the infrastructure required for production Linux engineering. Read [component boundaries and catalogs](component_boundaries.md) to explore the boundary failure contract, or follow [adding a component](adding_a_component.md) when scaffolding a new target. Explore [engineering standards](standards/index.md) for interface design, ranges usage and compiler policies.
 
 ## Prerequisites
 
