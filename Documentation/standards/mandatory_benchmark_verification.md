@@ -60,6 +60,12 @@ Engineers must verify physical hardware PMU metrics alongside wall clock latency
 
 Inspect CPU cycles, retired instructions, branch misses and cache misses. A sudden rise in retired instructions or branch mispredictions reveals unexpected abstraction penalties or missed compiler vectorization.
 
+## Global accelerated library reuse
+
+When benchmark profiling reveals computational bottlenecks, engineers should inspect `cmake/dependencies.cmake`.
+
+Centrally defined libraries with global visibility such as Intel oneAPI MKL, OpenBLAS or oneTBB can be linked privately at developer discretion. Linking an existing global library replaces bespoke scalar loops with mature vendor implementations. Always link third party libraries as `PRIVATE` in `targets/<name>/CMakeLists.txt` to preserve public interface encapsulation.
+
 ## Portable multi versioning consideration
 
 When hardware counters indicate high instructions per cycle on a coarse computational loop, engineers must consider function multi versioning. Review [function multi versioning and target clones](function_multi_versioning_and_target_clones.md) for qualification criteria.

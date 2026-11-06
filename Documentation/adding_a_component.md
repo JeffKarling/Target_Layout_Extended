@@ -64,9 +64,9 @@ Every operational component links `${PROJECT_NAME}::journal` as `PUBLIC` because
 
 ### Upfront dependency consultation and encapsulation
 
-When designing a new component, engineers should inspect `cmake/dependencies.cmake` before writing custom algorithms or utility data structures.
+All external third party dependencies are defined centrally in `cmake/dependencies.cmake` with global visibility. There is no separate approved library list. Any dependency present in `cmake/dependencies.cmake` is available for engineers to use at their discretion.
 
-If an approved external library already provides the needed capability, link that library as `PRIVATE` in `targets/<name>/CMakeLists.txt`. This avoids reinventing complex routines while keeping public contracts completely insulated from vendor headers.
+When designing a new component, engineers should inspect `cmake/dependencies.cmake` before writing custom algorithms or utility data structures. If an existing global library provides the needed capability, link that library as `PRIVATE` in `targets/<name>/CMakeLists.txt`. This avoids reinventing complex routines while keeping public contracts completely insulated from vendor headers.
 
 ## Public contract header
 

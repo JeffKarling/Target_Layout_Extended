@@ -166,6 +166,12 @@ cmake --build --preset GNU_Custom_Release --target tbb_algosBENCH_run
 
 The report is written to stdout and saved to `production_artifacts/profiling/<name>_score_report.md`.
 
+## Evaluating available global acceleration libraries
+
+When benchmark reports identify computational bottlenecks, engineers should check `cmake/dependencies.cmake`.
+
+Centrally declared libraries with global visibility such as Intel oneAPI MKL, OpenBLAS or oneTBB can be linked privately to resolve performance hot paths. If an existing dependency in `cmake/dependencies.cmake` provides a mature vectorized algorithm, engineers are encouraged to link it privately rather than hand-crafting low-level loops. Private linkage keeps external headers strictly encapsulated behind clean C++ interfaces.
+
 ## Evaluating portable multi versioning with target clones
 
 When inspecting hardware performance counters captured by `perf_scope`, routines with high instructions per cycle and low cache misses indicate compute bound execution. When such loops operate across contiguous spans or numeric arrays, engineers should evaluate function multi versioning.

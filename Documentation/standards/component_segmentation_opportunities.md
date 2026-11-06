@@ -58,6 +58,8 @@ Neighboring components remain safe from vectorization side effects or floating p
 
 All external third party dependencies must reside centrally in `cmake/dependencies.cmake`.
 
-Individual components are strictly prohibited from invoking `find_package` or declaring ad hoc third party submodules. Components link approved dependencies strictly as `PRIVATE` in `targets/<name>/CMakeLists.txt`.
+Imported targets declare global visibility using the `GLOBAL` keyword in `pkg_check_modules` or `find_package`. This makes every imported dependency available across the entire project. There is no separate approved library list. Any dependency defined in `cmake/dependencies.cmake` is implicitly available for engineers to link at their discretion.
 
-This guarantees that external dependencies can be upgraded, swapped or pruned at project maturity without altering consumer code or breaking public contracts.
+Engineers consult `cmake/dependencies.cmake` during greenfield component design and subsequent refactoring or optimization. When an available global library provides needed algorithms or data structures, link it privately in `targets/<name>/CMakeLists.txt` rather than writing redundant internal code.
+
+Individual components are strictly prohibited from invoking `find_package` or declaring ad hoc third party submodules in their own build files. Centralizing dependencies ensures third party versions and packages can be upgraded, swapped or pruned at project maturity without altering component code.
