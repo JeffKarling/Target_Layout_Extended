@@ -64,13 +64,14 @@ Recompile and execute the benchmark under optimized release.
 cmake --build --preset Clang_Custom_Release --target <component>BENCH_run
 ```
 
-Inspect the score report written to `production_artifacts/profiling/<component>_score_report.md`.
+Inspect the benchmark report written to `production_artifacts/profiling/<component>_score_report.md`.
 
 ## Step 6. Evaluate stopping criteria
 
-Inspect the decision field in the score report.
-* If the decision is `target_score_reached`, stop optimizing. The component achieved its target performance.
-* If the decision is `stop_diminishing_returns`, stop optimizing. Marginal gains for further iterations are too small to justify additional development time.
-* If the decision is `continue_optimizing` and optimization goals remain, repeat the loop.
+Inspect the directive and bottleneck fields in the benchmark report.
+* If the directive is `stop_hardware_saturated`, stop optimizing. The CPU execution units are saturated with high instructions per cycle.
+* If the directive is `stop_diminishing_returns`, stop optimizing. Marginal gains for further iterations are too small to justify additional development time.
+* If the directive is `regression_detected`, revert recent changes to restore the baseline performance.
+* If the directive is `continue_optimizing` and optimization goals remain, address the diagnosed bottleneck and repeat the loop.
 
 Present a concise comparison table contrasting before and after metrics in the delivery summary.

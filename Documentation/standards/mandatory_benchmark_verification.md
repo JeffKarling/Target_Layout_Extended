@@ -40,19 +40,19 @@ powerprofilesctl set performance
 
 Alternatively, select the performance profile in the desktop system settings menu.
 
-## Automated baseline comparison and score evaluation
+## Automated baseline comparison and hardware evaluation
 
 Every benchmark execution must evaluate current performance metrics against the birth baseline stored in `baseline.json`.
 
-Engineers must inspect the benchmark console output or the generated report in `production_artifacts/profiling/<name>_score_report.md`. The report tracks wall clock latency, CPU cycles, retired instructions and instructions per cycle.
+Engineers must inspect the benchmark console output or the generated report in `production_artifacts/profiling/<name>_score_report.md`. The report tracks wall clock latency, CPU cycles, retired instructions, instructions per cycle, cache misses and branch misses.
 
 Any noticeable regression in latency or instruction counts must be resolved before presenting changes as complete.
 
-## Bounded optimization and diminishing returns
+## Bounded optimization and stopping directives
 
-Engineers must respect human configured utility curves and target scores.
+Engineers must respect automated stopping directives emitted by the benchmark component.
 
-When the evaluation decision reaches `target_score_reached` or indicates `stop_diminishing_returns`, engineers must stop further optimization loops. Avoid unbounded micro-optimizations that deliver negligible speedups.
+When the evaluation indicates `stop_diminishing_returns` or `stop_hardware_saturated`, engineers must stop further optimization loops. Avoid unbounded micro-optimizations that deliver negligible speedups or attempt to exceed hardware execution unit saturation.
 
 ## Hardware performance metric verification
 

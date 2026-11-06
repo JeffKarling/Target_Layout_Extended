@@ -1,9 +1,5 @@
 {
   "component": "tbb_algos",
-  "human_baseline_score": 6.000,
-  "target_score": 8.500,
-  "token_budget": 4000,
-  "utility_curve": "logarithmic",
   "wall_ns_per_op": 650000.000,
   "cycles_per_op": 1850000.000,
   "instructions_per_op": 3900000.000,

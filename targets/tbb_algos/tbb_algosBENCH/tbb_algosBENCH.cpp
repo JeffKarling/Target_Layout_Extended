@@ -20,16 +20,12 @@ int main() {
 
     ps::score_baseline default_birth{};
     default_birth.component = "tbb_algos";
-    default_birth.human_baseline_score = 6.0;
-    default_birth.target_score = 8.5;
-    default_birth.token_budget = 4000U;
-    default_birth.curve = ps::utility_curve::logarithmic;
     default_birth.birth_metrics = current_metrics;
 
     std::filesystem::path const baseline_path = COMPONENT_BASELINE_PATH;
     auto const baseline = ps::load_or_create_baseline(baseline_path, default_birth);
-    auto const evaluation = ps::evaluate_score(baseline, current_metrics);
-    auto const report = ps::format_score_report(baseline, evaluation);
+    auto const evaluation = ps::evaluate_performance(baseline, current_metrics);
+    auto const report = ps::format_performance_report(baseline, evaluation);
 
     std::cout << report;
 

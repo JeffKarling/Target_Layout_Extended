@@ -110,17 +110,13 @@ sudo sysctl kernel.perf_event_paranoid=1
 powerprofilesctl set performance
 ```
 
-## Birth baseline and score driven optimization
+## Birth baseline and objective hardware evaluation
 
-Unbounded optimization consumes engineering effort when a component is already fast enough for its purpose. To keep optimization bounded, each `<name>BENCH/` component stores a birth baseline in `baseline.json`.
+Unbounded optimization consumes engineering effort when a component is already fast enough for its purpose. To keep optimization bounded, each `<name>BENCH/` component stores a birth baseline in `baseline.json`. The baseline records raw physical hardware counters captured during component birth without artificial score numbers.
 
 ```json title="targets/tbb_algos/tbb_algosBENCH/baseline.json"
 {
   "component": "tbb_algos",
-  "human_baseline_score": 6.000,
-  "target_score": 8.500,
-  "token_budget": 4000,
-  "utility_curve": "logarithmic",
   "wall_ns_per_op": 650000.000,
   "cycles_per_op": 1850000.000,
   "instructions_per_op": 3900000.000,
@@ -130,27 +126,23 @@ Unbounded optimization consumes engineering effort when a component is already f
 }
 ```
 
-### Utility curves and stop conditions
+### Minimal hardware signals and stopping directives
 
-The evaluation engine computes a speedup factor by comparing current `wall_ns_per_op` with the birth baseline. That speedup maps to a delta score using the chosen utility curve.
+The evaluation engine compares current execution metrics directly against the birth baseline. Benchmark runs emit three minimal signals for engineers and optimization loops.
 
-* **Logarithmic curve.** Awards 2.0 score points for each doubling of performance via `delta = 2.0 * log2(speedup)`. Early gains score well while extreme micro optimizations yield diminishing returns.
-* **Diminishing returns curve.** Applies a steeper square root decay for components where only initial algorithmic wins matter.
-* **Linear curve.** Scales score points proportionally with speedup. Useful on core bottleneck components where every percentage gain translates directly to system throughput.
+**Relative speedup ratio.** Computes throughput progress by comparing current latency and CPU cycles against birth metrics.
 
-Optimization halts when current score reaches `target_score`, or when the projected score gain for another 20 percent speedup drops below 0.25 points.
+**Dominant hardware bottleneck.** Diagnoses the primary performance bottleneck from PMU counters. Identified bottlenecks include `memory_bound` from high cache misses and `branch_stalled` from branch mispredictions. Other bottlenecks include `instruction_bloat` from redundant instructions, `hardware_saturated` from high instructions per cycle, or `compute_bound`.
+
+**Execution directive.** Emits an unambiguous action directive. Directives include `continue_optimizing` when headroom remains and `stop_diminishing_returns` when speedup gains drop below 3 percent. Directives also include `stop_hardware_saturated` when execution units are fully saturated, or `regression_detected` if latency worsens.
 
 ### Baseline creation on first run
 
-When a new benchmark runs for the first time without an existing `baseline.json`, `perf_scope::load_or_create_baseline()` measures the initial hardware counters and serializes `baseline.json` automatically using the `score_baseline` struct provided by `main()`.
+When a new benchmark runs for the first time without an existing `baseline.json`, `perf_scope::load_or_create_baseline()` measures the initial hardware counters. It serializes `baseline.json` automatically using the `score_baseline` struct provided by `main()`.
 
 ```cpp title="targets/tbb_algos/tbb_algosBENCH/tbb_algosBENCH.cpp"
 ps::score_baseline default_birth{};
 default_birth.component = "tbb_algos";
-default_birth.human_baseline_score = 6.0;
-default_birth.target_score = 8.5;
-default_birth.token_budget = 4000U;
-default_birth.curve = ps::utility_curve::logarithmic;
 default_birth.birth_metrics = current_metrics;
 ```
 
@@ -158,19 +150,18 @@ Commit `baseline.json` alongside the benchmark source code. Future benchmark run
 
 ### Executing benchmarks and reading reports
 
-Run the dedicated CMake benchmark target to measure the workload and print the score report. Executing benchmarks and evaluating PMU hardware counters is mandatory for every algorithmic change under [mandatory benchmark verification](standards/mandatory_benchmark_verification.md).
+Run the dedicated CMake benchmark target to measure the workload and print the performance report. Executing benchmarks and evaluating PMU hardware counters is mandatory for every algorithmic change under [mandatory benchmark verification](standards/mandatory_benchmark_verification.md).
 
 ```bash title="Run component benchmark target"
 cmake --build --preset GNU_Custom_Release --target tbb_algosBENCH_run
 ```
 
 ```markdown title="production_artifacts/profiling/tbb_algos_score_report.md"
-# Component Benchmark & Score Report (tbb_algos)
-- Birth baseline score: 6.00 / 10.00 (target: 8.50, curve: logarithmic, token budget: 4000)
+# Component Benchmark Report (tbb_algos)
 - Latency (ns/op):      318450.00 (birth: 650000.00, speedup: 2.04x)
-- Hardware PMU/op:      cycles=910200.00, instructions=2450100.00, IPC=2.69, branch_misses=180.00
-- Achieved score:       8.06 / 10.00 (delta: +2.06)
-- Workflow decision:    continue_optimizing (marginal gain for +20% speedup: +0.53 pts)
+- Hardware PMU/op:      cycles=910200.00, instructions=2450100.00, IPC=2.69, branch_misses=180.00, cache_misses=35.00
+- Bottleneck:           hardware_saturated
+- Directive:            stop_hardware_saturated
 ```
 
 The report is written to stdout and saved to `production_artifacts/profiling/<name>_score_report.md`.

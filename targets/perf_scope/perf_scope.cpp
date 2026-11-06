@@ -65,57 +65,51 @@ namespace tle::perf_scope {
             return std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
         }
 
-        [[nodiscard]] auto curve_to_string(utility_curve curve) noexcept -> std::string_view {
-            switch (curve) {
-                case utility_curve::linear:
-                    return "linear";
-                case utility_curve::logarithmic:
-                    return "logarithmic";
-                case utility_curve::diminishing_returns:
-                    return "diminishing_returns";
+        inline constexpr double k_min_worthwhile_speedup = 1.03;
+        inline constexpr double k_regression_threshold = 0.98;
+        inline constexpr double k_baseline_tolerance = 0.001;
+        inline constexpr double k_saturation_ipc_threshold = 2.5;
+        inline constexpr double k_cache_miss_threshold = 10.0;
+        inline constexpr double k_branch_miss_threshold = 5.0;
+        inline constexpr double k_instruction_bloat_ratio = 1.15;
+
+        [[nodiscard]] auto diagnose_bottleneck(
+            const hardware_metrics& current,
+            const hardware_metrics& birth
+        ) noexcept -> std::string_view {
+            if (!current.pmu_counters_active) {
+                return "unknown_pmu_inactive";
             }
-            return "logarithmic";
+            if (current.cache_misses_per_op >= k_cache_miss_threshold) {
+                return "memory_bound";
+            }
+            if (current.branch_misses_per_op >= k_branch_miss_threshold) {
+                return "branch_stalled";
+            }
+            if (birth.instructions_per_op > 0.0 &&
+                current.instructions_per_op > (birth.instructions_per_op * k_instruction_bloat_ratio)) {
+                return "instruction_bloat";
+            }
+            if (current.ipc >= k_saturation_ipc_threshold) {
+                return "hardware_saturated";
+            }
+            return "compute_bound";
         }
 
-        [[nodiscard]] auto string_to_curve(std::string_view name) noexcept -> utility_curve {
-            if (name == "linear") {
-                return utility_curve::linear;
+        [[nodiscard]] auto determine_directive(
+            double speedup_ratio,
+            std::string_view bottleneck
+        ) noexcept -> std::pair<std::string_view, bool> {
+            if (speedup_ratio < k_regression_threshold) {
+                return {"regression_detected", false};
             }
-            if (name == "diminishing_returns") {
-                return utility_curve::diminishing_returns;
+            if (bottleneck == "hardware_saturated") {
+                return {"stop_hardware_saturated", false};
             }
-            return utility_curve::logarithmic;
-        }
-
-        [[nodiscard]] auto compute_curve_score(
-            double base_score,
-            double speedup,
-            utility_curve curve
-        ) noexcept -> double {
-            if (speedup <= 0.0) {
-                return 1.0;
+            if (speedup_ratio > (1.0 + k_baseline_tolerance) && speedup_ratio < k_min_worthwhile_speedup) {
+                return {"stop_diminishing_returns", false};
             }
-            double delta = 0.0;
-            switch (curve) {
-                case utility_curve::linear:
-                    delta = (speedup - 1.0) * 2.0;
-                    break;
-                case utility_curve::logarithmic:
-                    // Each 2x speedup yields +2.0 score points; gains taper naturally at higher speedups.
-                    delta = 2.0 * std::log2(speedup);
-                    break;
-                case utility_curve::diminishing_returns: {
-                    // Asymptotic curve: moving from 5 -> 7 is fast, while 7 -> 10 requires exponential speedup.
-                    double const headroom = std::max(0.5, 10.0 - base_score);
-                    if (speedup >= 1.0) {
-                        delta = headroom * (1.0 - std::exp(-0.85 * (speedup - 1.0)));
-                    } else {
-                        delta = 2.5 * std::log2(speedup);
-                    }
-                    break;
-                }
-            }
-            return std::clamp(base_score + delta, 1.0, 10.0);
+            return {"continue_optimizing", true};
         }
 
         [[nodiscard]] auto extract_json_string(std::string_view content, std::string_view key) -> std::string_view {
@@ -250,10 +244,6 @@ namespace tle::perf_scope {
             out << std::fixed << std::setprecision(3);
             out << "{\n";
             out << R"(  "component": ")" << baseline.component << "\",\n";
-            out << "  \"human_baseline_score\": " << baseline.human_baseline_score << ",\n";
-            out << "  \"target_score\": " << baseline.target_score << ",\n";
-            out << "  \"token_budget\": " << baseline.token_budget << ",\n";
-            out << R"(  "utility_curve": ")" << curve_to_string(baseline.curve) << "\",\n";
             out << "  \"wall_ns_per_op\": " << baseline.birth_metrics.wall_ns_per_op << ",\n";
             out << "  \"cycles_per_op\": " << baseline.birth_metrics.cycles_per_op << ",\n";
             out << "  \"instructions_per_op\": " << baseline.birth_metrics.instructions_per_op << ",\n";
@@ -291,15 +281,6 @@ namespace tle::perf_scope {
             if (!comp.empty()) {
                 loaded.component = std::string(comp);
             }
-            std::string_view const curve_str = extract_json_string(content, "utility_curve");
-            if (!curve_str.empty()) {
-                loaded.curve = string_to_curve(curve_str);
-            }
-            loaded.human_baseline_score = extract_json_number(content, "human_baseline_score", default_baseline.human_baseline_score);
-            loaded.target_score = extract_json_number(content, "target_score", default_baseline.target_score);
-            loaded.token_budget = static_cast<std::size_t>(
-                std::max(0.0, extract_json_number(content, "token_budget", static_cast<double>(default_baseline.token_budget)))
-            );
             loaded.birth_metrics.wall_ns_per_op = extract_json_number(content, "wall_ns_per_op", default_baseline.birth_metrics.wall_ns_per_op);
             loaded.birth_metrics.cycles_per_op = extract_json_number(content, "cycles_per_op", default_baseline.birth_metrics.cycles_per_op);
             loaded.birth_metrics.instructions_per_op = extract_json_number(content, "instructions_per_op", default_baseline.birth_metrics.instructions_per_op);
@@ -313,7 +294,7 @@ namespace tle::perf_scope {
         }
     }
 
-    auto evaluate_score(
+    auto evaluate_performance(
         const score_baseline& baseline,
         const hardware_metrics& current
     ) noexcept -> score_evaluation {
@@ -324,45 +305,21 @@ namespace tle::perf_scope {
         double const curr_ns = std::max(1.0, current.wall_ns_per_op);
         eval.speedup_ratio = base_ns / curr_ns;
 
-        eval.achieved_score = compute_curve_score(
-            baseline.human_baseline_score,
-            eval.speedup_ratio,
-            baseline.curve
-        );
-        eval.score_delta = eval.achieved_score - baseline.human_baseline_score;
-
-        double const projected_score_20pct = compute_curve_score(
-            baseline.human_baseline_score,
-            eval.speedup_ratio * 1.20,
-            baseline.curve
-        );
-        eval.marginal_gain_next_20pct = projected_score_20pct - eval.achieved_score;
-
-        if (eval.achieved_score >= baseline.target_score) {
-            eval.worth_further_tokens = false;
-            eval.decision = "target_score_reached";
-        } else if (eval.marginal_gain_next_20pct < 0.25) {
-            eval.worth_further_tokens = false;
-            eval.decision = "stop_diminishing_returns";
-        } else {
-            eval.worth_further_tokens = true;
-            eval.decision = "continue_optimizing";
-        }
+        eval.bottleneck = diagnose_bottleneck(current, baseline.birth_metrics);
+        auto const [decision, worth] = determine_directive(eval.speedup_ratio, eval.bottleneck);
+        eval.decision = decision;
+        eval.worth_optimizing = worth;
         return eval;
     }
 
-    auto format_score_report(
+    auto format_performance_report(
         const score_baseline& baseline,
         const score_evaluation& evaluation
     ) noexcept -> std::string {
         try {
             std::ostringstream out;
             out << std::fixed << std::setprecision(2);
-            out << "# Component Benchmark & Score Report (" << baseline.component << ")\n";
-            out << "- Birth baseline score: " << baseline.human_baseline_score
-                << " / 10.00 (target: " << baseline.target_score
-                << ", curve: " << curve_to_string(baseline.curve)
-                << ", token budget: " << baseline.token_budget << ")\n";
+            out << "# Component Benchmark Report (" << baseline.component << ")\n";
             out << "- Latency (ns/op):      " << evaluation.current_metrics.wall_ns_per_op
                 << " (birth: " << baseline.birth_metrics.wall_ns_per_op
                 << ", speedup: " << evaluation.speedup_ratio << "x)\n";
@@ -370,19 +327,19 @@ namespace tle::perf_scope {
                 out << "- Hardware PMU/op:      cycles=" << evaluation.current_metrics.cycles_per_op
                     << ", instructions=" << evaluation.current_metrics.instructions_per_op
                     << ", IPC=" << evaluation.current_metrics.ipc
-                    << ", branch_misses=" << evaluation.current_metrics.branch_misses_per_op << "\n";
+                    << ", branch_misses=" << evaluation.current_metrics.branch_misses_per_op
+                    << ", cache_misses=" << evaluation.current_metrics.cache_misses_per_op << "\n";
             } else {
                 out << "- Hardware PMU/op:      steady_clock fallback active (kernel perf_event_paranoid > 1)\n";
             }
-            out << "- Achieved score:       " << evaluation.achieved_score
-                << " / 10.00 (delta: " << (evaluation.score_delta >= 0.0 ? "+" : "") << evaluation.score_delta << ")\n";
-            out << "- Workflow decision:    " << evaluation.decision
-                << " (marginal gain for +20% speedup: +" << evaluation.marginal_gain_next_20pct << " pts)\n";
+            out << "- Bottleneck:           " << evaluation.bottleneck << "\n";
+            out << "- Directive:            " << evaluation.decision << "\n";
             return out.str();
         } catch (...) {
             (void)jrn::catch_boundary_exception(k_workload_exception);
             return {};
         }
     }
+
 
 } // namespace tle::perf_scope

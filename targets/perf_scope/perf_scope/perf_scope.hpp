@@ -26,37 +26,22 @@ namespace tle::perf_scope {
         bool pmu_counters_active{false};
     };
 
-    // Cost-to-score importance curve defined by the human orchestrator.
-    enum class utility_curve : std::uint8_t {
-        linear = 0,
-        logarithmic = 1,
-        diminishing_returns = 2
-    };
-
-    inline constexpr double k_default_baseline_score = 5.0;
-    inline constexpr double k_default_target_score = 8.0;
-    inline constexpr std::size_t k_default_token_budget = 4000U;
-
     // Component birth baseline state stored in <name>BENCH/baseline.json.
     struct score_baseline {
         std::string component;
         hardware_metrics birth_metrics{};
-        double human_baseline_score{k_default_baseline_score};
-        double target_score{k_default_target_score};
-        std::size_t token_budget{k_default_token_budget};
-        utility_curve curve{utility_curve::logarithmic};
     };
+    using benchmark_baseline = score_baseline;
 
     // Result of comparing current component metrics against its birth baseline.
     struct score_evaluation {
         hardware_metrics current_metrics{};
         double speedup_ratio{1.0};
-        double achieved_score{k_default_baseline_score};
-        double score_delta{0.0};
-        double marginal_gain_next_20pct{0.0};
-        bool worth_further_tokens{true};
+        std::string_view bottleneck{"compute_bound"};
         std::string_view decision{"continue_optimizing"};
+        bool worth_optimizing{true};
     };
+    using benchmark_evaluation = score_evaluation;
 
     // RAII Linux perf_event_open hardware counter guard for isolated component benchmarking.
     class counter_guard {
@@ -114,16 +99,30 @@ namespace tle::perf_scope {
         const score_baseline& baseline
     ) noexcept -> bool;
 
-    // Evaluates current metrics against the component birth baseline using the human score curve.
-    [[nodiscard]] auto evaluate_score(
+    // Evaluates current metrics against the component birth baseline.
+    [[nodiscard]] auto evaluate_performance(
         const score_baseline& baseline,
         const hardware_metrics& current
     ) noexcept -> score_evaluation;
 
-    // Formats a compact, low-token markdown report for developers and AI optimization loops.
-    [[nodiscard]] auto format_score_report(
+    [[nodiscard]] inline auto evaluate_score(
+        const score_baseline& baseline,
+        const hardware_metrics& current
+    ) noexcept -> score_evaluation {
+        return evaluate_performance(baseline, current);
+    }
+
+    // Formats an objective hardware report for engineers and optimization loops.
+    [[nodiscard]] auto format_performance_report(
         const score_baseline& baseline,
         const score_evaluation& evaluation
     ) noexcept -> std::string;
+
+    [[nodiscard]] inline auto format_score_report(
+        const score_baseline& baseline,
+        const score_evaluation& evaluation
+    ) noexcept -> std::string {
+        return format_performance_report(baseline, evaluation);
+    }
 
 } // namespace tle::perf_scope

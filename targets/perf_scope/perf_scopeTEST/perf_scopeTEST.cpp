@@ -37,31 +37,43 @@ TEST(PerfScopeTest, EvaluatesDiminishingReturnsAndSavesBaseline) {
 
     ps::score_baseline birth{};
     birth.component = "demo_component";
-    birth.human_baseline_score = 5.0;
-    birth.target_score = 8.0;
-    birth.token_budget = 3000U;
-    birth.curve = ps::utility_curve::logarithmic;
     birth.birth_metrics.wall_ns_per_op = 1000.0;
+    birth.birth_metrics.cycles_per_op = 2000.0;
+    birth.birth_metrics.instructions_per_op = 3000.0;
+    birth.birth_metrics.ipc = 1.5;
+    birth.birth_metrics.branch_misses_per_op = 1.0;
+    birth.birth_metrics.cache_misses_per_op = 1.0;
+    birth.birth_metrics.pmu_counters_active = true;
 
     auto const loaded = ps::load_or_create_baseline(temp_baseline, birth);
     EXPECT_EQ(loaded.component, "demo_component");
-    EXPECT_DOUBLE_EQ(loaded.human_baseline_score, 5.0);
+    EXPECT_DOUBLE_EQ(loaded.birth_metrics.wall_ns_per_op, 1000.0);
 
-    // 2x speedup on logarithmic curve adds +2.0 points (5.0 -> 7.0)
-    ps::hardware_metrics fast{};
+    // 2x speedup with balanced compute continues optimizing
+    ps::hardware_metrics fast = birth.birth_metrics;
     fast.wall_ns_per_op = 500.0;
-    auto const eval = ps::evaluate_score(loaded, fast);
+    fast.cycles_per_op = 1000.0;
+    auto const eval = ps::evaluate_performance(loaded, fast);
     EXPECT_NEAR(eval.speedup_ratio, 2.0, 0.01);
-    EXPECT_NEAR(eval.achieved_score, 7.0, 0.05);
-    EXPECT_TRUE(eval.worth_further_tokens);
+    EXPECT_TRUE(eval.worth_optimizing);
+    EXPECT_EQ(eval.decision, "continue_optimizing");
+    EXPECT_EQ(eval.bottleneck, "compute_bound");
 
-    // 4x speedup reaches 9.0 >= target_score (8.0) -> stops optimizing
-    ps::hardware_metrics target_hit{};
-    target_hit.wall_ns_per_op = 250.0;
-    auto const eval_done = ps::evaluate_score(loaded, target_hit);
-    EXPECT_GE(eval_done.achieved_score, 8.0);
-    EXPECT_FALSE(eval_done.worth_further_tokens);
-    EXPECT_EQ(eval_done.decision, "target_score_reached");
+    // Micro gain under 3% speedup signals diminishing returns
+    ps::hardware_metrics micro_gain = birth.birth_metrics;
+    micro_gain.wall_ns_per_op = 985.0; // 1.015x speedup
+    auto const eval_dim = ps::evaluate_performance(loaded, micro_gain);
+    EXPECT_FALSE(eval_dim.worth_optimizing);
+    EXPECT_EQ(eval_dim.decision, "stop_diminishing_returns");
+
+    // Saturated pipeline (high IPC >= 2.5 with minimal misses) signals hardware saturation
+    ps::hardware_metrics saturated = birth.birth_metrics;
+    saturated.wall_ns_per_op = 250.0;
+    saturated.ipc = 3.2;
+    auto const eval_sat = ps::evaluate_performance(loaded, saturated);
+    EXPECT_EQ(eval_sat.bottleneck, "hardware_saturated");
+    EXPECT_FALSE(eval_sat.worth_optimizing);
+    EXPECT_EQ(eval_sat.decision, "stop_hardware_saturated");
 
     std::filesystem::remove(temp_baseline, ec);
 }
