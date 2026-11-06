@@ -58,7 +58,7 @@ nav:
   - Component boundaries and catalogs: component_boundaries.md
   - Journal developer guide: journal_developer_guide.md
   - Adding a component: adding_a_component.md
-  - Benchmarking and score optimization: benchmarking_and_profiling.md
+  - Benchmarking and hardware performance baselines: benchmarking_and_profiling.md
   - Journal performance comparison: journal_performance_comparison.md
   - Presets and multi compiler workflow: presets_and_compilers.md
   - Static analysis and deep debug: static_analysis_and_debug.md

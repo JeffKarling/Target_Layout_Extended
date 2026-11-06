@@ -38,7 +38,7 @@ When deeper whole-application CPU instruction analysis is needed, run `cmake --b
 ## Step 3. Apply invariant preserving optimizations
 
 Refactor the component implementation in `targets/<component>/<component>.cpp`.
-* **Accelerated library reuse.** Inspect `cmake/dependencies.cmake` for approved accelerated libraries before writing custom vector kernels. When an approved library like Intel oneAPI MKL or OpenBLAS provides the routine, link it privately in `targets/<component>/CMakeLists.txt` rather than reinventing the algorithm.
+* **Accelerated library reuse.** Inspect `cmake/dependencies.cmake` for available global libraries before writing custom computational kernels. When a centrally declared library like Intel oneAPI MKL, OpenBLAS or oneTBB provides the routine, link it privately in `targets/<component>/CMakeLists.txt` rather than reinventing the algorithm.
 * Replace intermediate container allocations and manual index loops with `std::views` pipelines, `std::views::enumerate` and `std::ranges::transform`.
 * Slice `std::span` buffers once before a loop (`span.first(count)`) and iterate via `std::views::enumerate` or `std::ranges` algorithms so bounds checks under `_GLIBCXX_ASSERTIONS` and `_LIBCPP_HARDENING_MODE_FAST` are hoisted out of the hot loop body.
 * Pass contiguous memory slices via `std::span` to enable SIMD auto-vectorization.
@@ -64,13 +64,14 @@ Recompile and execute the benchmark under optimized release.
 cmake --build --preset Clang_Custom_Release --target <component>BENCH_run
 ```
 
-Inspect the score report written to `production_artifacts/profiling/<component>_score_report.md`.
+Inspect the benchmark report written to `production_artifacts/profiling/<component>_score_report.md`.
 
 ## Step 6. Evaluate stopping criteria
 
-Inspect the decision field in the score report.
-* If the decision is `target_score_reached`, stop optimizing. The component achieved its target performance.
-* If the decision is `stop_diminishing_returns`, stop optimizing. Marginal gains for further iterations are too small to justify additional development time.
-* If the decision is `continue_optimizing` and optimization goals remain, repeat the loop.
+Inspect the directive and bottleneck fields in the benchmark report.
+* If the directive is `stop_hardware_saturated`, stop optimizing. The CPU execution units are saturated with high instructions per cycle.
+* If the directive is `stop_diminishing_returns`, stop optimizing. Marginal gains for further iterations are too small to justify additional development time.
+* If the directive is `regression_detected`, revert recent changes to restore the baseline performance.
+* If the directive is `continue_optimizing` and optimization goals remain, address the diagnosed bottleneck and repeat the loop.
 
 Present a concise comparison table contrasting before and after metrics in the delivery summary.

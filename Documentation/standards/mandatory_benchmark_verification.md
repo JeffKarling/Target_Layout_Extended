@@ -40,25 +40,35 @@ powerprofilesctl set performance
 
 Alternatively, select the performance profile in the desktop system settings menu.
 
-## Automated baseline comparison and score evaluation
+## Automated baseline comparison and hardware evaluation
 
-Every benchmark execution must evaluate current performance metrics against the birth baseline stored in `baseline.json`.
+Every benchmark execution evaluates live performance metrics against the birth baseline stored in `baseline.json`.
 
-Engineers must inspect the benchmark console output or the generated report in `production_artifacts/profiling/<name>_score_report.md`. The report tracks wall clock latency, CPU cycles, retired instructions and instructions per cycle.
+The `baseline.json` file serves as a fixed reference anchor recorded when the component is created. It is committed to version control and does not change during optimization loops.
+
+Live hardware performance counters captured during workload execution serve as the physical source of bottleneck diagnosis. The benchmark component measures CPU cycles, retired instructions, branch misses and cache misses directly from silicon registers.
+
+Engineers inspect the benchmark console output or the generated report in `production_artifacts/profiling/<name>_score_report.md`. The report highlights speedup progress, diagnosed bottlenecks and action directives.
 
 Any noticeable regression in latency or instruction counts must be resolved before presenting changes as complete.
 
-## Bounded optimization and diminishing returns
+## Bounded optimization and stopping directives
 
-Engineers must respect human configured utility curves and target scores.
+Engineers must respect automated stopping directives emitted by the benchmark component.
 
-When the evaluation decision reaches `target_score_reached` or indicates `stop_diminishing_returns`, engineers must stop further optimization loops. Avoid unbounded micro-optimizations that deliver negligible speedups.
+The benchmark component emits explicit directives to standard output and the markdown report. When the evaluation indicates `stop_diminishing_returns` or `stop_hardware_saturated`, engineers must stop further optimization loops. Avoid unbounded micro-optimizations that deliver negligible speedups or attempt to exceed hardware execution unit saturation.
 
 ## Hardware performance metric verification
 
 Engineers must verify physical hardware PMU metrics alongside wall clock latency.
 
-Inspect CPU cycles, retired instructions, branch misses and cache misses. A sudden rise in retired instructions or branch mispredictions reveals unexpected abstraction penalties or missed compiler vectorization.
+Inspect CPU cycles, retired instructions, branch misses and cache misses. Elevated cache misses indicate memory bandwidth saturation. High branch mispredictions reveal pipeline stalls. A sudden rise in retired instructions reveals unexpected abstraction penalties or missed compiler vectorization.
+
+## Global accelerated library reuse
+
+When benchmark profiling reveals computational bottlenecks, engineers should inspect `cmake/dependencies.cmake`.
+
+Centrally defined libraries with global visibility such as Intel oneAPI MKL, OpenBLAS or oneTBB can be linked privately at developer discretion. Linking an existing global library replaces bespoke scalar loops with mature vendor implementations. Always link third party libraries as `PRIVATE` in `targets/<name>/CMakeLists.txt` to preserve public interface encapsulation.
 
 ## Portable multi versioning consideration
 
