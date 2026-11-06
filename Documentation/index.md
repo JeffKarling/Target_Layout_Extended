@@ -53,6 +53,14 @@ Each file inside the component folder serves a distinct architectural role.
 * **Colocated unit test in `<name>TEST/`.** A GoogleTest executable that strips the `TEST` suffix from `${DIR_NAME}` to find its parent component. It verifies functional behavior and checks that boundary failures return cleanly.
 * **Colocated benchmark in `<name>BENCH/`.** A hardware counter benchmark that links `perf_scope` and scores the component against `baseline.json`.
 
+### The verification duo architecture
+
+Every physical component pairs its functional contract with a verification duo. Together, `<name>TEST/` and `<name>BENCH/` guard both the logical correctness and the operational behavior of the component.
+
+* **Dual contract verification.** The test target validates logical behavior, input edge cases and boundary failure firewalls using GoogleTest. The benchmark target validates physical runtime performance, throughput and hardware counter invariants using `perf_scope`.
+* **Stress testing under sanitizers.** Because benchmarks register directly with CTest via `add_test()`, running the test suite executes high iteration workloads under active memory sanitizers. This catches subtle data races and memory leaks that brief unit tests never trigger.
+* **Zero interface drift.** Both targets act as pure consumers linking only the public header. Any breaking modification to the public contract fails compilation across tests and benchmarks synchronously.
+
 ### The journal component sits at the lowest level
 
 Because `struct catalog` holds `journal::catalog_entry` fields and lives in the public header, every operational component links `${PROJECT_NAME}::journal` as `PUBLIC`. In Lakos terms `journal` is a level one component that every service component depends on. It must therefore stay small and stable, and it never links back to any component under `targets/`. Its own private dependencies on `libsystemd` and `-lstdc++exp` do not leak into consumer headers. The component captures pre unwind binary stack traces directly into stack buffers without runtime string formatting or DWARF lookup overhead. Raw instruction pointers transmit via `sd_journal_sendv` in `RAW_PAYLOAD` for offline symbolization through `addr2line`.

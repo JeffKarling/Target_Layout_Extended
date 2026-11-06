@@ -59,7 +59,15 @@ add_custom_target(${DIR_NAME}_run
 
 Because `tbb_algosBENCH` links only `tbb_algos` and `perf_scope`, the benchmark binary runs without application startup overhead. Measurement happens entirely inside the harness, leaving production component sources free of profiler hooks.
 
-Notice that the benchmark binary is also registered with `add_test()`. Running `ctest` executes the benchmark as a regression verification step.
+### The verification duo and regression verification
+
+Notice that the benchmark binary is also registered with `add_test()`. Running `ctest` executes the benchmark as an automated regression verification step.
+
+This design forms the verification duo alongside `<name>TEST/`.
+
+* **Complementary contract coverage.** Unit tests under `<name>TEST/` validate input boundaries, exception translation and functional invariants. Benchmarks under `<name>BENCH/` validate hardware efficiency, instruction budgets and cycle counts.
+* **Continuous stress and sanitizer gates.** When running `ctest` under sanitizers like `Clang_ASan` or `Clang_TSan`, the benchmark exercises the component under sustained multi iteration load. This reveals concurrency hazards and memory leaks that brief unit tests can miss.
+* **Immunity to interface drift.** Because both targets act as pure consumers linking only the public header `<name>/<name>.hpp`, any breaking contract modification immediately breaks compilation across tests and benchmarks.
 
 ## Hardware counters in perf_scope
 
