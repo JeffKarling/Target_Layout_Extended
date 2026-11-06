@@ -1,6 +1,12 @@
 # How it works
 
-Where **[Target Layout](https://jeffkarling.github.io/Target_Layout/)** provides the educational introduction to the physical component model, **Target Layout Extended** demonstrates how that model operates in production. Every core rule remains in place. One directory under `targets/` represents one physical component and one static CMake target, with every file sharing the name derived from `${DIR_NAME}`.
+Where **[Target Layout](https://jeffkarling.github.io/Target_Layout/)** provides the educational introduction to the physical component model, **Target Layout Extended** scales that model for high velocity software engineering. Every core rule remains in place. One directory under `targets/` represents one physical component and one static CMake target, with every file sharing the name derived from `${DIR_NAME}`.
+
+When John Lakos formulated physical component design, software development moved at a deliberate human pace. In that era, public interface unit testing provided an adequate safety net.
+
+Today, software iteration moves at unprecedented velocity. Rapid refactoring and modern engineering workflows modify complex systems within minutes. In this environment, functional unit tests alone are insufficient because they only verify logical pass or fail states. They remain completely blind to hidden performance degradation, unintended heap allocations, atomic contention and instruction bloat.
+
+Target Layout Extended pairs every physical component with a dedicated performance baseline target in `<name>BENCH/`. By measuring hardware performance counters against committed baseline scorecards, the architecture provides objective mathematical guardrails that ensure high velocity changes never compromise production runtime performance.
 
 This guide details the infrastructure required for production Linux engineering. Read [component boundaries and catalogs](component_boundaries.md) to explore the boundary failure contract, or follow [adding a component](adding_a_component.md) when scaffolding a new target. Explore [engineering standards](standards/index.md) for interface design, ranges usage and compiler policies.
 

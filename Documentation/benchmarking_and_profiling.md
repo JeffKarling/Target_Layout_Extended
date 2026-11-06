@@ -4,6 +4,16 @@ Monolithic performance profiling mixes algorithmic hot loops with startup routin
 
 When software is decomposed into Lakos physical components, source instrumentation becomes unnecessary. Every component has a narrow dependency graph and a self contained interface. Its hot path can be measured in isolation through a colocated benchmark in `<name>BENCH/` using hardware performance counters from `targets/perf_scope/` and score driven regression checks in `baseline.json`.
 
+## The necessity of performance baselines in high velocity engineering
+
+Physical component design was originally conceived for human engineering velocity. In that classical workflow, public interface unit testing provided a reliable safety mechanism.
+
+Modern engineering moves at a dramatically accelerated pace. Automated coding assistants, rapid algorithmic refactoring and continuous code generation modify complex translation units in seconds. Under this high velocity regime, functional unit tests provide an incomplete guarantee.
+
+Unit tests evaluate boolean correctness. They confirm whether an interface returns the expected outputs for given inputs. However, unit tests cannot detect when a refactoring introduces accidental heap allocations, excessive memory copies, lock contention or instruction bloat. A change can pass every unit test while causing a severe runtime performance regression.
+
+Target Layout Extended addresses this blind spot by elevating benchmark baselines into a mandatory architectural guardrail. Colocating `<name>BENCH/` alongside `<name>TEST/` gives engineers immediate, hardware validated feedback on latency, retired instructions, cache misses and CPU cycles. Performance regressions become compile and test time failures before degraded code reaches production.
+
 ## Colocated component benchmarks
 
 Just as `<name>TEST/` isolates unit verification, `<name>BENCH/` isolates performance measurement. Review [component segmentation opportunities](standards/component_segmentation_opportunities.md) for how isolated targets enable fine grained benchmarking and compiler optimizations.

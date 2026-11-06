@@ -22,7 +22,7 @@ Tier `arch=x86-64-v2` only introduces SSE4.2 and POPCNT while remaining constrai
 
 ## Candidate qualification criteria
 
-Indiscriminate cloning harms performance. Engineers and agents must verify that candidate routines satisfy strict technical criteria before applying the attribute.
+Indiscriminate cloning harms performance. Engineers must verify that candidate routines satisfy strict technical criteria before applying the attribute.
 
 * **Coarse computational granularity.** Cloned routines cannot be inlined at compile time because their target address resolves dynamically at runtime. The routine must contain enough computational work to easily amortize the IFUNC dispatch jump.
 * **Compute bound execution profile.** Hardware performance counters captured via `perf_scope` must indicate high instructions per cycle and low cache misses. Memory bound algorithms stalled on memory latency gain no throughput from vectorization.
