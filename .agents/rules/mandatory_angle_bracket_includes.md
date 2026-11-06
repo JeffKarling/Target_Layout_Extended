@@ -46,15 +46,15 @@ Both public interfaces and private internal helpers must resolve through angle b
 
 ## Anti pattern of falling back to quotes
 
-Agents must never introduce quoted includes to bypass compilation failures.
+Engineers must never introduce quoted includes to bypass compilation failures.
 
-If an include fails to resolve with angle brackets, that failure indicates an incomplete CMake target configuration. The agent must investigate and correct the CMake target definition, file set base paths, or target link libraries.
+If an include fails to resolve with angle brackets, that failure indicates an incomplete CMake target configuration. Engineers must investigate and correct the CMake target definition, file set base paths, or target link libraries.
 
-## Agent verification checklist
+## Verification checklist
 
-Whenever creating or modifying C++ source or header files, agents must perform verification.
+Whenever creating or modifying C++ source or header files, engineers must perform verification.
 
-Agents must run a repository scan before concluding any task.
+Engineers must run a repository scan before concluding any task.
 
 ```bash
 grep -rn '#include "' targets/
