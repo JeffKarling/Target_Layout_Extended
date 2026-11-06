@@ -33,6 +33,10 @@ This design follows three core principles.
 2. **Native systemd-journald integration.** Logs become structured systemd journal fields. Standard attributes include `MESSAGE`, `PRIORITY` and `COMPONENT`. Diagnostics attach `CODE_FILE`, `CODE_LINE`, `RAW_PAYLOAD`[^1] and `MESSAGE_ID`.
 3. **Compiler enforced component taxonomy.** Components do not manually declare logger names. The component name is deduced automatically from directory layout at compile time under the physical one name rule.
 
+## The journal component sits at the lowest physical level
+
+Because `struct catalog` holds `journal::catalog_entry` fields and lives in the public header, every operational component links `${PROJECT_NAME}::journal` as `PUBLIC`. In Lakos terms `journal` is a level one component that every service component depends on. It must therefore stay small and stable, and it never links back to any component under `targets/`. Its own private dependencies on `libsystemd` and `-lstdc++exp` do not leak into consumer headers. The component captures pre unwind binary stack traces directly into stack buffers without runtime string formatting or DWARF lookup overhead. Raw instruction pointers transmit via `sd_journal_sendv` in `RAW_PAYLOAD` for offline symbolization through `addr2line`.
+
 ## Adding journal to CMakeLists.txt
 
 In your component `targets/<name>/CMakeLists.txt`, link `journal` as a private or public dependency.

@@ -77,7 +77,7 @@ This design forms the verification duo alongside `<name>TEST/`.
 
 * **Complementary contract coverage.** Unit tests under `<name>TEST/` validate input boundaries, exception translation and functional invariants. Benchmarks under `<name>BENCH/` validate hardware efficiency, instruction budgets and cycle counts.
 * **Continuous stress and sanitizer gates.** When running `ctest` under sanitizers like `Clang_ASan` or `Clang_TSan`, the benchmark exercises the component under sustained multi iteration load. This reveals concurrency hazards and memory leaks that brief unit tests can miss.
-* **Immunity to interface drift.** Because both targets act as pure consumers linking only the public header `<name>/<name>.hpp`, any breaking contract modification immediately breaks compilation across tests and benchmarks.
+* **Immunity to interface drift.** Because both components act as pure consumers linking only the public header `<name>/<name>.hpp`, any breaking contract modification immediately breaks compilation across tests and benchmarks.
 
 ## Hardware counters in perf_scope
 
@@ -93,20 +93,26 @@ It captures core timing and hardware metrics per operation.
 * **Instructions per cycle.** Recorded in `ipc` as the ratio of retired instructions to CPU cycles.
 * **Branch and cache misses.** Recorded in `branch_misses_per_op` and `cache_misses_per_op` from `PERF_COUNT_HW_BRANCH_MISSES` and `PERF_COUNT_HW_CACHE_MISSES`.
 
-### Kernel permissions and fallback timing
+### Kernel permissions and workstation configuration
 
 On Linux systems where `/proc/sys/kernel/perf_event_paranoid` is set above 1, unprivileged processes cannot open hardware PMU counters. In that scenario `perf_scope` logs an operational warning and falls back to `std::chrono::steady_clock` timing without failing the benchmark run or test suite.
 
-!!! tip "Enabling unprivileged hardware PMU counters"
-    To allow unprivileged hardware counter access on developer workstations, lower `perf_event_paranoid` via `sysctl`.
+In addition, dynamic CPU frequency scaling introduces measurement variance across repeated benchmark executions. Engineers should lock the workstation power governor to maximum performance before taking baseline measurements.
 
-```bash title="Enable unprivileged hardware PMU counters"
+!!! tip "Workstation instrumentation and performance mode"
+    Lower `perf_event_paranoid` via `sysctl` to grant unprivileged PMU counter access. Switch the system power profile to performance mode to stabilize CPU clocks across benchmark runs.
+
+```bash title="Configure workstation for benchmark measurements"
+# Enable unprivileged hardware PMU counters
 sudo sysctl kernel.perf_event_paranoid=1
+
+# Set active power profile to performance on Linux workstations
+powerprofilesctl set performance
 ```
 
 ## Birth baseline and score driven optimization
 
-Unbounded optimization consumes engineering effort when a component is already fast enough for its purpose. To keep optimization bounded, each `<name>BENCH/` target stores a birth baseline in `baseline.json`.
+Unbounded optimization consumes engineering effort when a component is already fast enough for its purpose. To keep optimization bounded, each `<name>BENCH/` component stores a birth baseline in `baseline.json`.
 
 ```json title="targets/tbb_algos/tbb_algosBENCH/baseline.json"
 {

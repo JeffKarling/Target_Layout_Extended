@@ -12,7 +12,12 @@ Use this runbook to profile hot paths, apply zero allocation optimizations and v
 ## Step 1. Measure the starting baseline
 
 Always record the starting metrics before modifying any source code.
-Compile and run the target benchmark under an optimized custom release preset:
+
+Before taking initial measurements, prompt the user to ensure proper hardware counter permissions and stable CPU clock frequencies.
+* **Hardware PMU counters.** Verify that `/proc/sys/kernel/perf_event_paranoid` is set to 1 or lower. If set higher, recommend running `sudo sysctl kernel.perf_event_paranoid=1`.
+* **Performance power profile.** Prompt the user to switch the workstation into performance mode via `powerprofilesctl set performance` or the desktop power settings to prevent CPU frequency scaling jitter.
+
+Compile and run the component benchmark under an optimized custom release preset.
 
 ```bash
 cmake --build --preset Clang_Custom_Release --target <component>BENCH_run
@@ -22,7 +27,7 @@ Record the starting numbers for wall clock latency, CPU cycles, retired instruct
 
 ## Step 2. Profile bottlenecks using hardware counters
 
-Inspect the PMU metrics captured by `perf_scope`:
+Inspect the PMU metrics captured by `perf_scope`.
 * **High instruction count.** Indicates virtual dispatch overhead, redundant copies, per-iteration bounds checks inside loops or missing standard library inlining.
 * **Low IPC.** Indicates memory stalls, cache misses or branch mispredictions.
 * **Branch misses.** Indicates unpredicted conditionals inside inner loops. Replace with lookup tables or arithmetic masking.
@@ -32,7 +37,7 @@ When deeper whole-application CPU instruction analysis is needed, run `cmake --b
 
 ## Step 3. Apply invariant preserving optimizations
 
-Refactor the component implementation in `targets/<component>/<component>.cpp`:
+Refactor the component implementation in `targets/<component>/<component>.cpp`.
 * Replace intermediate container allocations and manual index loops with `std::views` pipelines, `std::views::enumerate` and `std::ranges::transform`.
 * Slice `std::span` buffers once before a loop (`span.first(count)`) and iterate via `std::views::enumerate` or `std::ranges` algorithms so bounds checks under `_GLIBCXX_ASSERTIONS` and `_LIBCPP_HARDENING_MODE_FAST` are hoisted out of the hot loop body.
 * Pass contiguous memory slices via `std::span` to enable SIMD auto-vectorization.
@@ -42,7 +47,7 @@ Refactor the component implementation in `targets/<component>/<component>.cpp`:
 
 ## Step 4. Verify behavioral correctness under debug
 
-Run the unit test suite across both compilers to ensure optimizations did not introduce functional defects:
+Run the unit test suite across both compilers to ensure optimizations did not introduce functional defects.
 
 ```bash
 ./production_artifacts/build_all.sh custom debug
@@ -52,7 +57,7 @@ Do not proceed to benchmark evaluation if any test fails.
 
 ## Step 5. Measure after metrics under release
 
-Recompile and execute the benchmark under optimized release:
+Recompile and execute the benchmark under optimized release.
 
 ```bash
 cmake --build --preset Clang_Custom_Release --target <component>BENCH_run
@@ -62,7 +67,7 @@ Inspect the score report written to `production_artifacts/profiling/<component>_
 
 ## Step 6. Evaluate stopping criteria
 
-Inspect the decision field in the score report:
+Inspect the decision field in the score report.
 * If the decision is `target_score_reached`, stop optimizing. The component achieved its target performance.
 * If the decision is `stop_diminishing_returns`, stop optimizing. Marginal gains for further iterations are too small to justify additional development time.
 * If the decision is `continue_optimizing` and optimization goals remain, repeat the loop.
