@@ -75,3 +75,13 @@ Prefer `static_assert`, concepts, and strong types over runtime assertions and e
 Keep public headers lightweight, clean, and macro free.
 
 Complex deduction logic and heavy implementation details belong in private `.cpp` files. Public component headers must remain clean compilation firewalls following John Lakos physical design.
+
+## Strict physical insulation and third party encapsulation
+
+Public headers must never include third party headers or expose third party types.
+
+John Lakos physical component design requires complete insulation between client translation units and private implementation dependencies. Exposing third party types or headers in `<name>/<name>.hpp` forces downstream consumers to inherit transitive compilation dependencies. This causes compilation cascades, leaks implementation details and couples client code to vendor ABIs.
+
+All external dependencies must be wrapped behind standard C++ types such as `std::span`, `std::string_view` or dedicated strong types. External libraries must always be linked `PRIVATE` in `targets/<name>/CMakeLists.txt`.
+
+Colocated unit test executables in `<name>TEST/` verify this boundary by linking only the component public interface without linking its private third party dependencies. If a public header accidentally leaks a private third party header, consumer compilation fails immediately.

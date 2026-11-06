@@ -30,3 +30,37 @@ TEST(TbbAlgosTest, ParallelTrigWorkRejectsZeroIterationsAtBoundary) {
     EXPECT_FALSE(ta::parallel_trig_work(values, 0U));
     EXPECT_TRUE(ta::parallel_trig_work(values, 64U));
 }
+
+TEST(TbbAlgosTest, ParallelPolynomialFmaComputesCorrectValues) {
+    std::vector<float> const input = {1.0F, 2.0F, 3.0F, 4.0F};
+    std::vector<float> output(input.size(), 0.0F);
+
+    EXPECT_TRUE(ta::parallel_polynomial_fma(output, input, 2.0F, 3.0F, 4.0F));
+
+    std::vector<float> const expected = {9.0F, 18.0F, 31.0F, 48.0F};
+    EXPECT_EQ(output, expected);
+}
+
+TEST(TbbAlgosTest, ParallelPolynomialFmaRejectsMismatchedSizes) {
+    std::vector<float> const input = {1.0F, 2.0F, 3.0F, 4.0F};
+    std::vector<float> output(3U, 0.0F);
+
+    EXPECT_FALSE(ta::parallel_polynomial_fma(output, input, 1.0F, 1.0F, 1.0F));
+}
+
+TEST(TbbAlgosTest, ParallelPolynomialFmaHandlesEmptySpans) {
+    std::vector<float> empty_in{};
+    std::vector<float> empty_out{};
+
+    EXPECT_TRUE(ta::parallel_polynomial_fma(empty_out, empty_in, 1.0F, 1.0F, 1.0F));
+}
+
+TEST(TbbAlgosTest, ParallelPolynomialFmaAcceptsSpanFromStackArray) {
+    std::array<float, 3> const input = {0.0F, 1.0F, 2.0F};
+    std::array<float, 3> output = {0.0F, 0.0F, 0.0F};
+
+    EXPECT_TRUE(ta::parallel_polynomial_fma(output, input, 1.0F, 1.0F, 1.0F));
+
+    std::array<float, 3> const expected = {1.0F, 3.0F, 7.0F};
+    EXPECT_EQ(output, expected);
+}

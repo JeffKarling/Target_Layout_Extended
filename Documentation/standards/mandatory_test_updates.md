@@ -25,3 +25,11 @@ Running `ctest` or the component test binary confirms that no regressions were i
 ## Test colocation under the one name rule
 
 In this repository, each component possesses its own dedicated test target located inside `targets/<name>/<name>TEST/`. Engineers must place component specific tests directly inside the owning component test directory.
+
+## Dual testing scopes
+
+Testing in Target Layout Extended covers two distinct scopes.
+
+**Public contract verification.** Tests primarily exercise the public interface in `<name>/<name>.hpp` from an external caller perspective. This validates interface contracts, input parameter validation, boundary firewall exceptions and expected return values without coupling tests to private implementation details.
+
+**Internal invariant verification.** When components implement complex internal state machines, private helper translation units or `detail` namespaces, tests may verify internal mechanics directly. This ensures that internal algorithms operate correctly without exposing implementation details to public consumers.

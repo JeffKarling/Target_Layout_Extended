@@ -74,4 +74,5 @@ nav:
       - Shared target overrides: standards/override_shared_target_defaults.md
       - Mandatory test updates: standards/mandatory_test_updates.md
       - Mandatory benchmark verification: standards/mandatory_benchmark_verification.md
+      - Function multi versioning and target clones: standards/function_multi_versioning_and_target_clones.md
       - Documentation and writing style: standards/documentation_and_natural_writing.md

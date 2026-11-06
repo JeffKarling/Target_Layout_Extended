@@ -60,7 +60,13 @@ if(BUILD_TESTING)
 endif()
 ```
 
-Every operational component links `${PROJECT_NAME}::journal` as `PUBLIC` because its public header declares catalog entries. Any internal library dependencies must be linked `PRIVATE` unless public function signatures expose their types. Components requiring custom compiler flags or warning suppressions follow [local overrides for shared target defaults](standards/override_shared_target_defaults.md).
+Every operational component links `${PROJECT_NAME}::journal` as `PUBLIC` because its public header declares catalog entries. All external third party dependencies must be linked `PRIVATE` in `targets/<name>/CMakeLists.txt`. Public headers must never include third party headers or expose vendor types. Components requiring custom compiler flags or warning suppressions follow [local overrides for shared target defaults](standards/override_shared_target_defaults.md).
+
+### Upfront dependency consultation and encapsulation
+
+When designing a new component, engineers should inspect `cmake/dependencies.cmake` before writing custom algorithms or utility data structures.
+
+If an approved external library already provides the needed capability, link that library as `PRIVATE` in `targets/<name>/CMakeLists.txt`. This avoids reinventing complex routines while keeping public contracts completely insulated from vendor headers.
 
 ## Public contract header
 
