@@ -4,9 +4,19 @@ Monolithic performance profiling mixes algorithmic hot loops with startup routin
 
 When software is decomposed into Lakos physical components, source instrumentation becomes unnecessary. Every component has a narrow dependency graph and a self contained interface. Its hot path can be measured in isolation through a colocated benchmark in `<name>BENCH/` using hardware performance counters from `targets/perf_scope/` and score driven regression checks in `baseline.json`.
 
+## The necessity of performance baselines in high velocity engineering
+
+Physical component design was originally conceived for human engineering velocity. In that classical workflow, public interface unit testing provided a reliable safety mechanism.
+
+Modern engineering moves at a dramatically accelerated pace. Automated coding assistants, rapid algorithmic refactoring and continuous code generation modify complex translation units in seconds. Under this high velocity regime, functional unit tests provide an incomplete guarantee.
+
+Unit tests evaluate boolean correctness. They confirm whether an interface returns the expected outputs for given inputs. However, unit tests cannot detect when a refactoring introduces accidental heap allocations, excessive memory copies, lock contention or instruction bloat. A change can pass every unit test while causing a severe runtime performance regression.
+
+Target Layout Extended addresses this blind spot by elevating benchmark baselines into a mandatory architectural guardrail. Colocating `<name>BENCH/` alongside `<name>TEST/` gives engineers immediate, hardware validated feedback on latency, retired instructions, cache misses and CPU cycles. Performance regressions become compile and test time failures before degraded code reaches production.
+
 ## Colocated component benchmarks
 
-Just as `<name>TEST/` isolates unit verification, `<name>BENCH/` isolates performance measurement.
+Just as `<name>TEST/` isolates unit verification, `<name>BENCH/` isolates performance measurement. Review [component segmentation opportunities](standards/component_segmentation_opportunities.md) for how isolated targets enable fine grained benchmarking and compiler optimizations.
 
 ```text title="Colocated benchmark directory layout"
 targets/tbb_algos/
@@ -59,7 +69,15 @@ add_custom_target(${DIR_NAME}_run
 
 Because `tbb_algosBENCH` links only `tbb_algos` and `perf_scope`, the benchmark binary runs without application startup overhead. Measurement happens entirely inside the harness, leaving production component sources free of profiler hooks.
 
-Notice that the benchmark binary is also registered with `add_test()`. Running `ctest` executes the benchmark as a regression verification step.
+### The verification duo and regression verification
+
+Notice that the benchmark binary is also registered with `add_test()`. Running `ctest` executes the benchmark as an automated regression verification step.
+
+This design forms the verification duo alongside `<name>TEST/`.
+
+* **Complementary contract coverage.** Unit tests under `<name>TEST/` validate input boundaries, exception translation and functional invariants. Benchmarks under `<name>BENCH/` validate hardware efficiency, instruction budgets and cycle counts.
+* **Continuous stress and sanitizer gates.** When running `ctest` under sanitizers like `Clang_ASan` or `Clang_TSan`, the benchmark exercises the component under sustained multi iteration load. This reveals concurrency hazards and memory leaks that brief unit tests can miss.
+* **Immunity to interface drift.** Because both components act as pure consumers linking only the public header `<name>/<name>.hpp`, any breaking contract modification immediately breaks compilation across tests and benchmarks.
 
 ## Hardware counters in perf_scope
 
@@ -75,20 +93,26 @@ It captures core timing and hardware metrics per operation.
 * **Instructions per cycle.** Recorded in `ipc` as the ratio of retired instructions to CPU cycles.
 * **Branch and cache misses.** Recorded in `branch_misses_per_op` and `cache_misses_per_op` from `PERF_COUNT_HW_BRANCH_MISSES` and `PERF_COUNT_HW_CACHE_MISSES`.
 
-### Kernel permissions and fallback timing
+### Kernel permissions and workstation configuration
 
 On Linux systems where `/proc/sys/kernel/perf_event_paranoid` is set above 1, unprivileged processes cannot open hardware PMU counters. In that scenario `perf_scope` logs an operational warning and falls back to `std::chrono::steady_clock` timing without failing the benchmark run or test suite.
 
-!!! tip "Enabling unprivileged hardware PMU counters"
-    To allow unprivileged hardware counter access on developer workstations, lower `perf_event_paranoid` via `sysctl`.
+In addition, dynamic CPU frequency scaling introduces measurement variance across repeated benchmark executions. Engineers should lock the workstation power governor to maximum performance before taking baseline measurements.
 
-```bash title="Enable unprivileged hardware PMU counters"
+!!! tip "Workstation instrumentation and performance mode"
+    Lower `perf_event_paranoid` via `sysctl` to grant unprivileged PMU counter access. Switch the system power profile to performance mode to stabilize CPU clocks across benchmark runs.
+
+```bash title="Configure workstation for benchmark measurements"
+# Enable unprivileged hardware PMU counters
 sudo sysctl kernel.perf_event_paranoid=1
+
+# Set active power profile to performance on Linux workstations
+powerprofilesctl set performance
 ```
 
 ## Birth baseline and score driven optimization
 
-Unbounded optimization consumes engineering effort when a component is already fast enough for its purpose. To keep optimization bounded, each `<name>BENCH/` target stores a birth baseline in `baseline.json`.
+Unbounded optimization consumes engineering effort when a component is already fast enough for its purpose. To keep optimization bounded, each `<name>BENCH/` component stores a birth baseline in `baseline.json`.
 
 ```json title="targets/tbb_algos/tbb_algosBENCH/baseline.json"
 {
@@ -134,7 +158,7 @@ Commit `baseline.json` alongside the benchmark source code. Future benchmark run
 
 ### Executing benchmarks and reading reports
 
-Run the dedicated CMake benchmark target to measure the workload and print the score report.
+Run the dedicated CMake benchmark target to measure the workload and print the score report. Executing benchmarks and evaluating PMU hardware counters is mandatory for every algorithmic change under [mandatory benchmark verification](standards/mandatory_benchmark_verification.md).
 
 ```bash title="Run component benchmark target"
 cmake --build --preset GNU_Custom_Release --target tbb_algosBENCH_run
@@ -150,6 +174,14 @@ cmake --build --preset GNU_Custom_Release --target tbb_algosBENCH_run
 ```
 
 The report is written to stdout and saved to `production_artifacts/profiling/<name>_score_report.md`.
+
+## Evaluating portable multi versioning with target clones
+
+When inspecting hardware performance counters captured by `perf_scope`, routines with high instructions per cycle and low cache misses indicate compute bound execution. When such loops operate across contiguous spans or numeric arrays, engineers should evaluate function multi versioning.
+
+Developer benchmarks run under custom release presets where `-march=native` is active. To measure the genuine speedup delivered by `target_clones` on portable distribution binaries, execute the benchmark using a default preset such as `GNU_Default_Release`.
+
+This verifies that the multi versioned IFUNC resolver dispatches to the `x86-64-v3` or `x86-64-v4` clone on modern processors while maintaining a baseline fallback. Review [function multi versioning and target clones](standards/function_multi_versioning_and_target_clones.md) for qualification rules and attribute syntax.
 
 ## Whole application profiling with Linux perf
 

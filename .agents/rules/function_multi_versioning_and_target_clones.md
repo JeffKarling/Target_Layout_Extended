@@ -1,0 +1,1 @@
+../../Documentation/standards/function_multi_versioning_and_target_clones.md

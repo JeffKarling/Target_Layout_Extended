@@ -7,7 +7,7 @@ The Target Layout Extended project takes the security of its code and build infr
 If you believe you have found a security vulnerability, please do not file a public issue. Disclose it responsibly through one of the following channels:
 
 - Use GitHub private vulnerability reporting on the repository Security tab.
-- Email the maintainer directly at `jeffkarling@proton.me`.
+- Email the maintainer directly at `tle_security@protonmail.com`.
 
 Provide detailed information about the vulnerability:
 - A description of the issue and potential impact

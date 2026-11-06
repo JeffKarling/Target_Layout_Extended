@@ -27,4 +27,14 @@ namespace tle::tbb_algos {
         std::size_t inner_iterations = k_default_trig_iterations
     ) noexcept -> bool;
 
+    // Evaluates a fused multiply-add polynomial transformation in parallel across contiguous spans.
+    // Demonstrates function multi-versioning with target_clones across baseline, v3 and v4 microarchitectures.
+    [[nodiscard]] auto parallel_polynomial_fma(
+        std::span<float> output,
+        std::span<const float> input,
+        float a,
+        float b,
+        float c
+    ) noexcept -> bool;
+
 } // namespace tle::tbb_algos
