@@ -36,6 +36,7 @@ Refactor the component implementation in `targets/<component>/<component>.cpp`:
 * Replace intermediate container allocations and manual index loops with `std::views` pipelines, `std::views::enumerate` and `std::ranges::transform`.
 * Slice `std::span` buffers once before a loop (`span.first(count)`) and iterate via `std::views::enumerate` or `std::ranges` algorithms so bounds checks under `_GLIBCXX_ASSERTIONS` and `_LIBCPP_HARDENING_MODE_FAST` are hoisted out of the hot loop body.
 * Pass contiguous memory slices via `std::span` to enable SIMD auto-vectorization.
+* Evaluate coarse compute bound loops for function multi versioning. Apply `target_clones` targeting `default`, `arch=x86-64-v3` and `arch=x86-64-v4` following `.agents/rules/function_multi_versioning_and_target_clones.md` to accelerate portable release packages.
 * Hoist invariant calculations and memory allocations out of hot loops.
 * Preserve public API contracts so downstream consumers remain unaffected.
 

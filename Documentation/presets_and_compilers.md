@@ -32,7 +32,7 @@ Default presets set `CMAKE_BUILD_TYPE` to a standard value such as `Debug` or `R
 | `Clang_Custom_Debug_Deep` | `Clang_Debug_Deep` |
 | `Clang_ASan` | `Clang_ASan` |
 
-`target_compile_options.cmake` and `target_properties.cmake` match these names with `$<CONFIG:GNU_Release>` and similar generator expressions. One flat list of generator expressions therefore covers every compiler and configuration without `if()` branches. Standard build types match none of the custom compile option expressions. Default presets therefore get CMake's stock flags, with link time optimization added in `Release` when `ENABLE_IPO` is on.
+`target_compile_options.cmake` and `target_properties.cmake` match these names with `$<CONFIG:GNU_Release>` and similar generator expressions. One flat list of generator expressions therefore covers every compiler and configuration without `if()` branches. Standard build types match none of the custom compile option expressions. Default presets therefore get CMake's stock flags, with link time optimization added in `Release` when `ENABLE_IPO` is on. Default release builds also leverage `target_clones` annotations to activate AVX2 and AVX-512 microarchitectures at runtime while preserving baseline x86-64 compatibility across all machines. Review [function multi versioning and target clones](standards/function_multi_versioning_and_target_clones.md) for technical details.
 
 !!! note "Explicit flag lists for custom configurations"
     Because the build type names are custom, CMake does not add its own `-O` or `-g` defaults for them. Every flag a custom configuration needs is listed explicitly in `target_compile_options.cmake`.

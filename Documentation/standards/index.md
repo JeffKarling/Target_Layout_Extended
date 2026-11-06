@@ -19,3 +19,5 @@ These standards apply to both human engineers and automated development workflow
 **Generous structured logging.** Fast ring buffer logging allows abundant diagnostic traces across all Syslog severities without thread contention or heap allocation.
 
 **Colocated verification.** Unit tests and hardware PMU benchmarks reside directly inside the component directory under `<name>TEST/` and `<name>BENCH/`.
+
+**Portable multi versioning.** Algorithms running coarse compute bound loops over contiguous spans evaluate `target_clones`. Monolithic static binaries deliver hardware accelerated SIMD throughput on modern processors while retaining baseline x86-64 compatibility.

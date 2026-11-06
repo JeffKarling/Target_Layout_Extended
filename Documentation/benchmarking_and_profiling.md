@@ -151,6 +151,14 @@ cmake --build --preset GNU_Custom_Release --target tbb_algosBENCH_run
 
 The report is written to stdout and saved to `production_artifacts/profiling/<name>_score_report.md`.
 
+## Evaluating portable multi versioning with target clones
+
+When inspecting hardware performance counters captured by `perf_scope`, routines with high instructions per cycle and low cache misses indicate compute bound execution. When such loops operate across contiguous spans or numeric arrays, engineers should evaluate function multi versioning.
+
+Developer benchmarks run under custom release presets where `-march=native` is active. To measure the genuine speedup delivered by `target_clones` on portable distribution binaries, execute the benchmark using a default preset such as `GNU_Default_Release`.
+
+This verifies that the multi versioned IFUNC resolver dispatches to the `x86-64-v3` or `x86-64-v4` clone on modern processors while maintaining a baseline fallback. Review [function multi versioning and target clones](standards/function_multi_versioning_and_target_clones.md) for qualification rules and attribute syntax.
+
 ## Whole application profiling with Linux perf
 
 When you need to profile the entire application across all components or inspect disassembled assembly instructions, `cmake/perf.cmake` provides CMake targets that write reports to `production_artifacts/profiling/perf/`.
