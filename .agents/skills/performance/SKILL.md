@@ -38,6 +38,7 @@ When deeper whole-application CPU instruction analysis is needed, run `cmake --b
 ## Step 3. Apply invariant preserving optimizations
 
 Refactor the component implementation in `targets/<component>/<component>.cpp`.
+* **Accelerated library reuse.** Inspect `cmake/dependencies.cmake` for approved accelerated libraries before writing custom vector kernels. When an approved library like Intel oneAPI MKL or OpenBLAS provides the routine, link it privately in `targets/<component>/CMakeLists.txt` rather than reinventing the algorithm.
 * Replace intermediate container allocations and manual index loops with `std::views` pipelines, `std::views::enumerate` and `std::ranges::transform`.
 * Slice `std::span` buffers once before a loop (`span.first(count)`) and iterate via `std::views::enumerate` or `std::ranges` algorithms so bounds checks under `_GLIBCXX_ASSERTIONS` and `_LIBCPP_HARDENING_MODE_FAST` are hoisted out of the hot loop body.
 * Pass contiguous memory slices via `std::span` to enable SIMD auto-vectorization.
