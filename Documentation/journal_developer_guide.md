@@ -2,6 +2,18 @@
 
 This guide explains how to use `journal` when building a new component under Target Layout Extended. Developers accustomed to libraries like `spdlog` will notice key differences in mental model, design rules and performance characteristics.
 
+## Why a custom logging library was needed
+
+John Lakos formulated physical component design to govern compile time boundaries and dependency hierarchies. Under that model, `<name>/<name>.hpp` defines the static compile time contract.
+
+However, classical physical design left operational failure telemetry unaddressed. Traditional applications compensated by sprinkling arbitrary text strings across source files using general purpose logging libraries. This practice leaves systems with no documented failure taxonomy or runtime contracts.
+
+Target Layout Extended resolves this gap through physical symmetry between the component and Linux `systemd-journald`. Every operational component directory pairs `<name>/<name>.hpp` as its static contract with `<name>.catalog` as its runtime operational contract. The header declares strongly typed 128 bit UUID catalog entries inside `struct catalog`. The colocated catalog file documents the exact failure modes and operator runbooks for those identifiers.
+
+When an unhandled exception hits the boundary firewall, `journal` transmits structured fields directly to `systemd-journald`. System operators running `journalctl -x` immediately see the catalog explanations rendered alongside the event.
+
+Generic logging libraries cannot provide this symmetry. They lack knowledge of Lakos physical boundaries, requiring manual logger names and expensive string formatting on caller threads. The custom `journal` library deduces component taxonomy automatically from directory layout at compile time. It copies raw binary payloads into lock free ring buffers in roughly 30 nanoseconds, insulating caller threads from I/O bottlenecks.
+
 ## Mental model transition from spdlog
 
 In `spdlog`, logging interpolates runtime variables into a formatted string on the calling thread before writing to console or file sinks.
