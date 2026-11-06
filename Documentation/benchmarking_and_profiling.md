@@ -112,7 +112,7 @@ powerprofilesctl set performance
 
 ## Birth baseline and objective hardware evaluation
 
-Unbounded optimization consumes engineering effort when a component is already fast enough for its purpose. To keep optimization bounded, each `<name>BENCH/` component stores a birth baseline in `baseline.json`. The baseline records raw physical hardware counters captured during component birth without artificial score numbers.
+Unbounded optimization consumes engineering effort when a component is already fast enough for its purpose. To keep optimization bounded, each `<name>BENCH/` component stores a birth baseline in `baseline.json`. The baseline records raw physical hardware counters captured during component birth without artificial score numbers. The file acts as a fixed reference anchor committed to version control and remains unchanged during subsequent optimization loops.
 
 ```json title="targets/tbb_algos/tbb_algosBENCH/baseline.json"
 {
@@ -128,7 +128,7 @@ Unbounded optimization consumes engineering effort when a component is already f
 
 ### Minimal hardware signals and stopping directives
 
-The evaluation engine compares current execution metrics directly against the birth baseline. Benchmark runs emit three minimal signals for engineers and optimization loops.
+The evaluation engine compares live execution metrics directly against the birth baseline. Benchmark runs emit three minimal signals to standard output and `production_artifacts/profiling/<name>_score_report.md` for engineers and automated optimization loops.
 
 **Relative speedup ratio.** Computes throughput progress by comparing current latency and CPU cycles against birth metrics.
 
