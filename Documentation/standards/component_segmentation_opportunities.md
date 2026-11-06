@@ -53,3 +53,11 @@ target_compile_options(${DIR_NAME} PRIVATE
 ```
 
 Neighboring components remain safe from vectorization side effects or floating point precision loss.
+
+## Centralized dependency governance
+
+All external third party dependencies must reside centrally in `cmake/dependencies.cmake`.
+
+Individual components are strictly prohibited from invoking `find_package` or declaring ad hoc third party submodules. Components link approved dependencies strictly as `PRIVATE` in `targets/<name>/CMakeLists.txt`.
+
+This guarantees that external dependencies can be upgraded, swapped or pruned at project maturity without altering consumer code or breaking public contracts.
