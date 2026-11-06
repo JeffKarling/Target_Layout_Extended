@@ -2,11 +2,15 @@
 
 # Journal runtime policy technical reference
 
-This document explains the runtime log policy engine in `targets/journal`. It covers physical component boundaries, the complete struct definitions, and two adapter patterns.
+The `journal` component separates the decision of what enters the persistent `systemd-journald` log from the diagnostic output produced by internal component functions. Internal functions emit generous diagnostic events directly to ring memory without concern for disk saturation or I/O bottlenecks. A built in flight recorder policy acts as the default behavior. It suppresses high volume debug records in memory, emitting them only if a downstream fault triggers a lookbehind breadcrumb flush.
+
+External controllers can adjust this filtering logic at runtime without restarting processes or recompiling binaries. For example, a central health orchestrator managing a fleet of distributed daemons can dynamically scale log granularity across hosts. When an anomalous condition appears, an administrator or health daemon can focus on a single misbehaving component with a fine grained debug microscope. Once diagnosis concludes, the orchestrator restores quiet flight recorder defaults across the fleet. This design demonstrates strict physical decoupling between zero allocation logging and external control transports such as POSIX signals, Varlink, D-Bus or HTTP REST.
+
+This technical reference covers physical component boundaries, struct definitions and two concrete adapter implementations.
 
 ## Architectural overview and physical levelization
 
-The `journal` target sits at the base of the project physical dependency graph. It links zero networking, serialization, or IPC libraries. Runtime policy administration is handled by higher level adapter components in `targets/`.
+The `journal` component sits at the base of the project physical dependency graph. It links no networking, serialization or IPC libraries. Runtime policy administration is handled by higher level adapter components in `targets/`.
 
 ```mermaid
 flowchart TD
@@ -22,7 +26,7 @@ flowchart TD
     end
 ```
 
-The `journal` target implements a strict last caller wins contract. It tracks no sessions and performs no authentication. The most recent valid call to `journal::activate_policy` updates consumer behavior immediately.
+The `journal` component implements a strict last caller wins contract. It tracks no sessions and performs no authentication. The most recent valid call to `journal::activate_policy` updates consumer behavior immediately.
 
 ## Pointer free policy and component override reference
 
