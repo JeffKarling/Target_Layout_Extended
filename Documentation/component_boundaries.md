@@ -2,7 +2,7 @@
 
 In a system built around physical components, the boundary between components acts as an architectural wall. A component consumer only sees `<name>/<name>.hpp` and links `${PROJECT_NAME}::<name>`. Everything else stays private inside `targets/<name>/`.
 
-**Target Layout Extended** demonstrates two runtime practices at service and subsystem walls. First, exceptions thrown inside private internals are caught at the component boundary proxy before crossing into another CMake target. Second, boundary failures and internal diagnostics are recorded to `systemd-journald` through `targets/journal/`.
+**Target Layout Extended** demonstrates two runtime practices at service and subsystem walls. First, exceptions thrown inside private internals are caught at the component boundary proxy. Second, boundary failures with diagnostics are recorded to `systemd-journald` using `journal` the internal logging library.
 
 ## Architectural rationale and why not standard text logging
 

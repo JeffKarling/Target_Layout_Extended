@@ -7,6 +7,9 @@ add_executable(${DIR_NAME} ${DIR_NAME}.cpp)
 include(${CMAKE_BINARY_DIR}/target_properties.cmake)
 include(${CMAKE_BINARY_DIR}/target_compile_options.cmake)
 
+# Application loop uses C++23 std::views::enumerate
+target_compile_features(${DIR_NAME} PRIVATE cxx_std_23)
+
 target_link_libraries(${DIR_NAME}
         PRIVATE
         ${PROJECT_NAME}::database_manager

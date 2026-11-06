@@ -2,7 +2,7 @@
 
 ## Independent target isolation
 
-Every component in Target Layout Extended is an independent CMake target with strict private and public boundaries. Agents must view physical boundaries as enablers for incremental adoption, clean encapsulation, and localized optimization.
+Every component in Target Layout Extended is an independent CMake target with strict private and public boundaries. Engineers must view physical boundaries as enablers for incremental adoption, clean encapsulation and localized optimization.
 
 ## Private helpers versus splitting a new sibling component
 
@@ -18,7 +18,7 @@ Keep component boundaries sharp as responsibilities grow.
 
 Major standard library implementations maintain binary compatibility across modern language standards within the same toolchain.
 
-When planning a component implementation, agents should consider adopting newer language features privately. A component can compile its internal translation unit under C++26 while presenting a C++23 header to consumers.
+When planning a component implementation, engineers should consider adopting newer language features privately. A component can compile its internal translation unit under C++26 while presenting a C++23 header to consumers.
 
 ```cmake
 # Internal implementation uses modern language features without forcing upgrades on consumers
@@ -40,7 +40,7 @@ target_compile_features(${DIR_NAME} PUBLIC cxx_std_23)
 
 ## Localized compiler optimizations and hardware acceleration
 
-Agents must not apply aggressive performance flags globally when only specific algorithms require them.
+Engineers must not apply aggressive performance flags globally when only specific algorithms require them.
 
 Hot numerical routines or vector processing components can safely enable hardware specific SIMD extensions locally.
 

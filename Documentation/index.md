@@ -1,5 +1,3 @@
-[Base Target Layout](https://github.com/JeffKarling/Target_Layout) | [Base Documentation](https://jeffkarling.github.io/Target_Layout/) | [Why Target Layout](https://jeffkarling.github.io/Target_Layout/why_target_layout/)
-
 # How it works
 
 Where **[Target Layout](https://jeffkarling.github.io/Target_Layout/)** provides the educational introduction to the physical component model, **Target Layout Extended** demonstrates how that model operates in production. Every core rule remains in place. One directory under `targets/` represents one physical component and one static CMake target, with every file sharing the name derived from `${DIR_NAME}`.

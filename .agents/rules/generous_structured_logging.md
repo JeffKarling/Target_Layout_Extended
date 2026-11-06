@@ -2,7 +2,7 @@
 
 ## Core mandate
 
-Agents must log generously across components without fearing heap allocation or I/O blocking on the calling thread.
+Engineers must log generously across components without fearing heap allocation or I/O blocking on the calling thread.
 
 The `journal` component records events into a preallocated 2048 slot `constinit` lock free multi producer single consumer ring buffer in roughly 30 nanoseconds. Producer calls capture a hardware cycle counter timestamp via `raw_timestamp`, static string pointers, and raw payload bytes without formatting strings or invoking system calls on the application thread. A dedicated `SCHED_BATCH` background consumer thread formats `iovec` fields into stack buffers and transmits them via `sd_journal_sendv`.
 

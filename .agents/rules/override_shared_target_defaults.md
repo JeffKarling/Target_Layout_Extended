@@ -14,7 +14,7 @@ Dropping `target_compile_options.cmake` completely removes optimization levels a
 
 ## The local override pattern
 
-When a component encounters friction with global defaults, agents must retain the baseline files. Agents apply surgical overrides directly on the target after including `target_compile_options.cmake`.
+When a component encounters friction with global defaults, engineers must retain the baseline files. Engineers apply surgical overrides directly on the target after including `target_compile_options.cmake`.
 
 Because compilers evaluate flags from left to right, appending an inverse flag on the target overrides the inherited global option. This preserves all other optimizations, sanitizers and hardening defines.
 
@@ -36,7 +36,7 @@ target_compile_options(${DIR_NAME} PRIVATE
 
 Machine generated code frequently conflicts with strict warning profiles. Google Protobuf schemas trigger warnings such as global constructors or sign conversions.
 
-Agents must suppress only the exact offending diagnostics on the target using generator expressions.
+Engineers must suppress only the exact offending diagnostics on the target using generator expressions.
 
 ```cmake
 include(${CMAKE_BINARY_DIR}/target_properties.cmake)

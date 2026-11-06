@@ -2,7 +2,7 @@
 
 ## Core mandate
 
-Agents must write all documentation and markdown files in natural English. Automated prose must avoid formulaic patterns, robotic title casing and exaggerated punctuation.
+Engineers must write all documentation and markdown files in natural English. Technical prose must avoid formulaic patterns, robotic title casing and exaggerated punctuation.
 
 Clear technical prose relies on concise sentences separated by periods rather than nested clauses joined by punctuation.
 

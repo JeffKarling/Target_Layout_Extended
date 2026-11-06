@@ -63,7 +63,7 @@ Inspect the score report written to `production_artifacts/profiling/<component>_
 
 Inspect the decision field in the score report:
 * If the decision is `target_score_reached`, stop optimizing. The component achieved its target performance.
-* If the decision is `stop_diminishing_returns`, stop optimizing. Marginal gains for further iterations are too small to justify context tokens.
-* If the decision is `continue_optimizing` and remaining token budget allows, repeat the loop.
+* If the decision is `stop_diminishing_returns`, stop optimizing. Marginal gains for further iterations are too small to justify additional development time.
+* If the decision is `continue_optimizing` and optimization goals remain, repeat the loop.
 
 Present a concise comparison table contrasting before and after metrics in the delivery summary.
