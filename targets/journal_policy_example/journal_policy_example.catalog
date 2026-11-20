@@ -1,10 +1,10 @@
-# systemd journald message catalog for component: journal_signal_adapter
+# systemd journald message catalog for component: journal_policy_example
 
 -- ba2938d457754bafa974bf0e5523af8e
 Subject: Signal adapter failure caught at component boundary
-Defined-By: tle::journal_signal_adapter
+Defined-By: tle::journal_policy_example
 Support: https://github.com/JeffKarling/Target_Layout_Extended
 
-The journal_signal_adapter boundary firewall caught an unexpected fault while
+The journal_policy_example boundary firewall caught an unexpected fault while
 configuring or executing the background signal listener thread.
 

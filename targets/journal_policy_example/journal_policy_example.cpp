@@ -1,4 +1,4 @@
-#include <journal_signal_adapter/journal_signal_adapter.hpp>
+#include <journal_policy_example/journal_policy_example.hpp>
 #include <journal/journal.hpp>
 #include <array>
 #include <cerrno>
@@ -10,11 +10,14 @@
 #include <thread>
 #include <utility>
 
-namespace tle::journal_signal_adapter {
+namespace tle::journal_policy_example {
 
     namespace {
         constexpr std::int64_t k_poll_interval_ns = 50'000'000; // 50 milliseconds
 
+        // Demonstration loop illustrating journal's decoupled write policy.
+        // Waits for externally triggered policy changes via SIGUSR1 and SIGUSR2 so the core journal
+        // writer remains independent of any specific OS signal or IPC transport.
         void listener_loop(const std::stop_token& stop_token, journal::policy debug_policy) noexcept {
             sigset_t listen_set{};
             sigemptyset(&listen_set);
@@ -150,4 +153,4 @@ namespace tle::journal_signal_adapter {
         }
     }
 
-} // namespace tle::journal_signal_adapter
+} // namespace tle::journal_policy_example

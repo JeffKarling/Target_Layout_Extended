@@ -15,7 +15,7 @@ The `journal` component sits at the base of the project physical dependency grap
 ```mermaid
 flowchart TD
     Client["External Client"] -->|"Transport Payload"| Adapter["Higher Level Adapter"]
-    subgraph AdapterTarget["targets/journal_signal_adapter or IPC Adapter"]
+    subgraph AdapterTarget["targets/journal_policy_example or IPC Adapter"]
         Adapter -->|"Validates candidate"| ValidPolicy["is_valid_policy()"]
         ValidPolicy -->|"Atomically publishes"| ActivatePolicy["activate_policy()"]
     end
@@ -91,9 +91,9 @@ void reset_default_policy() noexcept;
 
 Signals represent a lightweight control mechanism requiring zero third party libraries. The exact same `journal` calls work inside Varlink, D-Bus, or HTTP REST adapters.
 
-The physical component `targets/journal_signal_adapter` exemplifies this pattern. It links `PRIVATE ${PROJECT_NAME}::journal` and manages a dedicated listener thread.
+The physical component `targets/journal_policy_example` exemplifies this pattern. It links `PRIVATE ${PROJECT_NAME}::journal` and manages a dedicated listener thread.
 
-```cpp title="targets/journal_signal_adapter/journal_signal_adapter/journal_signal_adapter.hpp"
+```cpp title="targets/journal_policy_example/journal_policy_example/journal_policy_example.hpp"
 class signal_adapter {
 public:
     [[nodiscard]] static auto default_debug_policy() noexcept -> journal::policy;
@@ -121,7 +121,7 @@ public:
 
 The listener loop runs `sigtimedwait` on a dedicated thread rather than an asynchronous signal handler.
 
-```cpp title="targets/journal_signal_adapter/journal_signal_adapter.cpp"
+```cpp title="targets/journal_policy_example/journal_policy_example.cpp"
 void signal_adapter::listener_loop(std::stop_token stop_token, journal::policy debug_policy) noexcept {
     sigset_t listen_set{};
     sigemptyset(&listen_set);

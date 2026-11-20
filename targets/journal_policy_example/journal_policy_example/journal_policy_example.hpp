@@ -5,18 +5,22 @@
 #include <optional>
 #include <journal/journal.hpp>
 
-namespace tle::journal_signal_adapter {
+namespace tle::journal_policy_example {
 
     struct catalog {
         journal::catalog_entry k_adapter_fault{
             .message_id = "ba2938d457754bafa974bf0e5523af8e",
-            .component = "journal_signal_adapter",
+            .component = "journal_policy_example",
             .summary = "Signal adapter failure caught at component boundary"
         };
     };
     inline constexpr catalog k_catalog{};
 
-    // RAII POSIX signal adapter component that manages a dedicated listener thread.
+    // Demonstration component illustrating journal's decoupled write policy.
+    // Shows how an external trigger using POSIX SIGUSR1 and SIGUSR2 signals can swap the active
+    // journal policy at runtime without coupling the core journal library to signal handling.
+    //
+    // RAII POSIX signal adapter that manages a dedicated listener thread.
     // The thread waits on SIGUSR1 and SIGUSR2 using sigtimedwait to avoid signal handler reentrancy.
     // SIGUSR1 activates a verbose debug policy, while SIGUSR2 resets default flight recorder policy.
     class signal_adapter {
@@ -60,4 +64,4 @@ namespace tle::journal_signal_adapter {
         bool _signals_blocked{false};
     };
 
-} // namespace tle::journal_signal_adapter
+} // namespace tle::journal_policy_example
