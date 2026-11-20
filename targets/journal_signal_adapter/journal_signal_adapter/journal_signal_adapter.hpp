@@ -1,9 +1,8 @@
 #pragma once
 
 #include <csignal>
+#include <memory>
 #include <optional>
-#include <stop_token>
-#include <thread>
 #include <journal/journal.hpp>
 
 namespace tle::journal_signal_adapter {
@@ -54,10 +53,9 @@ namespace tle::journal_signal_adapter {
         static void drain_pending_signals() noexcept;
 
     private:
-        static void listener_loop(std::stop_token stop_token, journal::policy debug_policy) noexcept;
-
+        struct impl;
         journal::policy _debug_policy{};
-        std::jthread _worker{};
+        std::unique_ptr<impl> _impl{};
         sigset_t _saved_mask{};
         bool _signals_blocked{false};
     };

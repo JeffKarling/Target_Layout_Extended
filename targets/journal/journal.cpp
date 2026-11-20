@@ -20,6 +20,7 @@
 #include <stop_token>
 #include <string_view>
 #include <thread>
+#include <tuple>
 #include <type_traits>
 
 namespace tle::journal {
@@ -725,7 +726,14 @@ namespace tle::journal {
             }
             warm_up_backtrace();
             try {
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wexit-time-destructors"
+#endif
                 static consumer_runner const runner{};
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
                 (void)runner;
             } catch (...) {
                 ctx.ring.state.store(k_state_stopped, std::memory_order_release);

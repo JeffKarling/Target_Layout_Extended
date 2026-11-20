@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <memory>
 #include <span>
+#include <string>
 #include <string_view>
 #include <system_error>
 
@@ -145,7 +146,7 @@ namespace tle::journal {
             std::ranges::transform(
                 k_prefix.substr(0U, prefix_len),
                 buffer.begin(),
-                [](char ch) constexpr noexcept { return static_cast<std::byte>(ch); }
+                [](char character) constexpr noexcept { return static_cast<std::byte>(character); }
             );
             std::size_t offset = prefix_len;
             auto const tail = buffer.subspan(offset);
