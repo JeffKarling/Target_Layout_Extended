@@ -3,8 +3,11 @@
 #include <journal/journal.hpp>
 #include <chrono>
 #include <csignal>
+#include <optional>
+#include <string>
 #include <thread>
 #include <unistd.h>
+#include <utility>
 
 namespace jrn = tle::journal;
 namespace adapter = tle::journal_signal_adapter;
@@ -49,6 +52,21 @@ TEST(SignalAdapterTest, HandlesMoveSemantics) {
 
     moved.stop();
     EXPECT_FALSE(moved.is_running());
+
+    auto source = adapter::signal_adapter::create();
+    ASSERT_TRUE(source.has_value());
+    EXPECT_TRUE(source->is_running());
+
+    auto target = adapter::signal_adapter::create();
+    ASSERT_TRUE(target.has_value());
+    EXPECT_TRUE(target->is_running());
+
+    *target = std::move(*source);
+    EXPECT_TRUE(target->is_running());
+    EXPECT_FALSE(source->is_running());
+
+    target->stop();
+    EXPECT_FALSE(target->is_running());
 }
 
 TEST(SignalAdapterTest, TogglesDebugAndDefaultPolicyOnSignals) {

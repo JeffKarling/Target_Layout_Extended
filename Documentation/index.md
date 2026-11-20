@@ -84,7 +84,7 @@ include(${CMAKE_BINARY_DIR}/target_compile_options.cmake)
 The scripts are not functions. They operate on whatever `${DIR_NAME}` holds at the point of inclusion, which works because the one name rule guarantees the variable names the current target. The sources live in `cmake/templates/` and `cmake/CMakeLists.txt` copies them into the build tree with `configure_file(... COPYONLY)`. That is why components include them from `${CMAKE_BINARY_DIR}`.
 
 * **No custom wrapper functions.** Components still use standard `add_library()`, `target_sources()` and `target_link_libraries()` calls rather than opaque wrapper macros.
-* **Uniform properties across components.** `target_properties.cmake` sets C++23 as a compile feature and turns on `POSITION_INDEPENDENT_CODE` and `OPTIMIZE_DEPENDENCIES`. It also wires up link time optimization and the optional `clang-tidy`, `include-what-you-use` and `cppcheck` hooks.
+* **Uniform properties across components.** `target_properties.cmake` sets C++20 as the baseline compile feature and turns on `POSITION_INDEPENDENT_CODE` and `OPTIMIZE_DEPENDENCIES`. It also wires up link time optimization and the optional `clang-tidy`, `include-what-you-use` and `cppcheck` hooks.
 * **Generator expression flag matrices.** `target_compile_options.cmake` keys every flag set on `$<CONFIG:...>` with the custom build type names described in [presets and multi compiler workflow](presets_and_compilers.md).
 
 ## Code generation as a first class sibling component
@@ -130,6 +130,8 @@ target_sources(${DIR_NAME}
         ${CMAKE_CURRENT_BINARY_DIR}/${DIR_NAME}/${DIR_NAME}.pb.h
 )
 
+# Suppress static analysis on machine generated Protobuf sources that cannot be modified for human style rules
+# Mark headers as SYSTEM so downstream consumers ignore compiler diagnostics in generated headers
 set_target_properties(${DIR_NAME} PROPERTIES
         SYSTEM ON
         CXX_CLANG_TIDY ""

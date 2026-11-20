@@ -1,11 +1,54 @@
 #include <journal_signal_adapter/journal_signal_adapter.hpp>
+#include <journal/journal.hpp>
+#include <array>
 #include <cerrno>
 #include <csignal>
+#include <cstdint>
 #include <ctime>
 #include <pthread.h>
+#include <stop_token>
+#include <thread>
 #include <utility>
 
 namespace tle::journal_signal_adapter {
+
+    namespace {
+        constexpr std::int64_t k_poll_interval_ns = 50'000'000; // 50 milliseconds
+
+        void listener_loop(const std::stop_token& stop_token, journal::policy debug_policy) noexcept {
+            sigset_t listen_set{};
+            sigemptyset(&listen_set);
+            sigaddset(&listen_set, SIGUSR1);
+            sigaddset(&listen_set, SIGUSR2);
+
+            struct timespec timeout{
+                .tv_sec = 0,
+                .tv_nsec = k_poll_interval_ns
+            };
+
+            while (!stop_token.stop_requested()) {
+                siginfo_t info{};
+                int const sig = ::sigtimedwait(&listen_set, &info, &timeout);
+                if (sig == SIGUSR1) {
+                    (void)journal::activate_policy(debug_policy);
+                    journal::log(
+                        journal::severity::notice,
+                        journal::message{"Signal adapter activated verbose debug policy"}
+                    );
+                } else if (sig == SIGUSR2) {
+                    journal::reset_default_policy();
+                    journal::log(
+                        journal::severity::notice,
+                        journal::message{"Signal adapter restored default flight recorder policy"}
+                    );
+                }
+            }
+        }
+    } // namespace
+
+    struct signal_adapter::impl {
+        std::jthread worker;
+    };
 
     auto signal_adapter::default_debug_policy() noexcept -> journal::policy {
         journal::policy policy{};
@@ -52,12 +95,19 @@ namespace tle::journal_signal_adapter {
     }
 
     signal_adapter::signal_adapter(journal::policy debug_policy)
-        : _debug_policy(debug_policy) {
+        : _debug_policy(debug_policy),
+          _impl(std::make_unique<impl>()) {
         if (block_signals(_saved_mask)) {
             _signals_blocked = true;
-            _worker = std::jthread([debug_policy](std::stop_token token) noexcept {
-                listener_loop(token, debug_policy);
-            });
+            try {
+                _impl->worker = std::jthread([debug_policy](const std::stop_token& token) noexcept {
+                    listener_loop(token, debug_policy);
+                });
+            } catch (...) {
+                (void)restore_signals(_saved_mask);
+                _signals_blocked = false;
+                throw;
+            }
         }
     }
 
@@ -67,7 +117,7 @@ namespace tle::journal_signal_adapter {
 
     signal_adapter::signal_adapter(signal_adapter&& other) noexcept
         : _debug_policy(other._debug_policy),
-          _worker(std::move(other._worker)),
+          _impl(std::move(other._impl)),
           _saved_mask(other._saved_mask),
           _signals_blocked(other._signals_blocked) {
         other._signals_blocked = false;
@@ -77,7 +127,7 @@ namespace tle::journal_signal_adapter {
         if (this != &other) {
             stop();
             _debug_policy = other._debug_policy;
-            _worker = std::move(other._worker);
+            _impl = std::move(other._impl);
             _saved_mask = other._saved_mask;
             _signals_blocked = other._signals_blocked;
             other._signals_blocked = false;
@@ -86,47 +136,17 @@ namespace tle::journal_signal_adapter {
     }
 
     auto signal_adapter::is_running() const noexcept -> bool {
-        return _worker.joinable();
+        return _impl != nullptr && _impl->worker.joinable();
     }
 
     void signal_adapter::stop() noexcept {
-        if (_worker.joinable()) {
-            _worker.request_stop();
-            _worker.join();
+        if (_impl != nullptr && _impl->worker.joinable()) {
+            _impl->worker.request_stop();
+            _impl->worker.join();
         }
         if (_signals_blocked) {
             (void)restore_signals(_saved_mask);
             _signals_blocked = false;
-        }
-    }
-
-    void signal_adapter::listener_loop(std::stop_token stop_token, journal::policy debug_policy) noexcept {
-        sigset_t listen_set{};
-        sigemptyset(&listen_set);
-        sigaddset(&listen_set, SIGUSR1);
-        sigaddset(&listen_set, SIGUSR2);
-
-        struct timespec timeout{
-            .tv_sec = 0,
-            .tv_nsec = 50'000'000 // 50 milliseconds
-        };
-
-        while (!stop_token.stop_requested()) {
-            siginfo_t info{};
-            int const sig = ::sigtimedwait(&listen_set, &info, &timeout);
-            if (sig == SIGUSR1) {
-                (void)journal::activate_policy(debug_policy);
-                journal::log(
-                    journal::severity::notice,
-                    journal::message{"Signal adapter activated verbose debug policy"}
-                );
-            } else if (sig == SIGUSR2) {
-                journal::reset_default_policy();
-                journal::log(
-                    journal::severity::notice,
-                    journal::message{"Signal adapter restored default flight recorder policy"}
-                );
-            }
         }
     }
 

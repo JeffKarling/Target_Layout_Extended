@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <source_location>
 #include <span>
 #include <stdexcept>
 #include <system_error>

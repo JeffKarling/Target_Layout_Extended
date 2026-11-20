@@ -45,12 +45,11 @@ Public functions in operational components such as `database_manager`, `tbb_algo
 [[nodiscard]] auto add_item(const Item& item) noexcept -> bool;
 ```
 
-### Is noexcept mandatory in a component design
+### Physical boundary guarantees
 
-Marking public functions `noexcept` is an architectural pattern for operational and subsystem boundaries, not a mandatory rule for every component.
+The strict component model relies on structural guarantees rather than developer vigilance. When a component links private third party libraries or calls system facilities, the author cannot predict every exception those dependencies might throw. Without an enforced boundary, unpredicted exceptions escape and puncture component encapsulation.
 
-* **Subsystem and service components.** Components that encapsulate I/O, thread pools, system calls or third party libraries benefit from `noexcept` boundaries. The boundary firewalls and Lippincott handlers insulate targets from internal failures.
-* **Data schemas and value types.** Pure data components such as `targets/item_proto/` expose generated Protobuf classes whose constructors and mutators allocate memory and follow standard C++ exception semantics. Wrapping fine grained value types or inline accessors in `noexcept` boundary loggers would add unnecessary overhead.
+Marking public interfaces `noexcept` creates a compiler enforced firewall. The boundary catches every unhandled internal exception before it can leak into caller call stacks. The failure is recorded in the system journal alongside component catalog diagnostics, and callers receive a deterministic status.
 
 ## The Lippincott function pattern
 
@@ -132,7 +131,7 @@ inline constexpr catalog k_catalog{};
 
 ### Automatic deduction and explicit selection
 
-Components select catalog entries according to the size of their catalog.
+The number of catalog entries is chosen at engineer discretion based on the component failure model. Component complexity is only one factor alongside whether the component needs a single safety net or granular failure routing. The logging library adapts its compile time interface based on whether the catalog declares a single entry or multiple entries.
 
 * **Single entry deduction.** When `struct catalog` contains exactly one entry, the `journal::single_entry_catalog` concept is satisfied. The boundary handler calls `journal::catch_boundary_exception(k_catalog)` without naming the entry, as `tbb_algos` does.
 * **Multiple entry selection.** When `struct catalog` contains more than one entry, that overload is removed from the candidate set. The boundary handler must call `journal::catch_boundary_exception(k_catalog.k_add_item_failed)` to name its fallback contract.
