@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <journal_signal_adapter/journal_signal_adapter.hpp>
+#include <journal_policy_example/journal_policy_example.hpp>
 #include <journal/journal.hpp>
 #include <chrono>
 #include <csignal>
@@ -10,14 +10,14 @@
 #include <utility>
 
 namespace jrn = tle::journal;
-namespace adapter = tle::journal_signal_adapter;
+namespace adapter = tle::journal_policy_example;
 
 static_assert(jrn::single_entry_catalog<adapter::catalog>);
 static_assert(jrn::is_valid_catalog(adapter::k_catalog));
 
 TEST(SignalAdapterTest, CatalogConformsToComponentFirewallSpecification) {
     EXPECT_TRUE(adapter::k_catalog.k_adapter_fault.is_valid());
-    EXPECT_EQ(adapter::k_catalog.k_adapter_fault.component, "journal_signal_adapter");
+    EXPECT_EQ(adapter::k_catalog.k_adapter_fault.component, "journal_policy_example");
 }
 
 TEST(SignalAdapterTest, StartsAndStopsCleanlyViaFactory) {
